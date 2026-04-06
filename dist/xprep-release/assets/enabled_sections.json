@@ -1,0 +1,13 @@
+{
+  "documents": true,
+  "usb": true,
+  "videos": true,
+  "kiwix": true,
+  "kolibri": true,
+  "calibre": true,
+  "tools": true,
+  "prayer": true,
+  "games": true,
+  "expat": true,
+  "maps": true
+}

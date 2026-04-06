@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Space Invaders — xPrep Games</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #111; color: #e0e0e0; font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+    h1 { font-size: 1.1rem; color: #555; margin-bottom: 6px; letter-spacing: 0.12em; }
+    canvas { background: #000; border: 1px solid #222; border-radius: 8px; display: block; max-width: 100%; }
+    .hud { display: flex; gap: 32px; margin-bottom: 10px; font-size: 0.85rem; color: #555; }
+    .hud b { color: #e0e0e0; }
+    #msg { font-size: 0.9rem; color: #888; margin-bottom: 8px; height: 22px; text-align: center; }
+    .btn { background: #222; color: #e0e0e0; border: 1px solid #444; border-radius: 8px; padding: 8px 24px; font-size: 0.85rem; cursor: pointer; margin-top: 12px; }
+    .btn:hover { background: #333; }
+    .back { position: fixed; top: 16px; left: 20px; font-size: 0.82rem; color: #555; text-decoration: none; }
+    .back:hover { color: #aaa; }
+    .controls { margin-top: 10px; font-size: 0.75rem; color: #444; text-align: center; line-height: 1.8; }
+    .mob-btns { display: none; margin-top: 12px; gap: 8px; }
+    @media (max-width: 600px) { .mob-btns { display: flex; } }
+    .mob-btn { background: #222; border: 1px solid #444; border-radius: 8px; color: #888; padding: 12px 20px; font-size: 1rem; cursor: pointer; }
+    .mob-btn:active { background: #333; }
+  </style>
+</head>
+<body>
+<a href="/games/" class="back">Back to Games</a>
+<h1>SPACE INVADERS</h1>
+<div class="hud">Score: <b id="score">0</b> &nbsp; Lives: <b id="lives">3</b> &nbsp; Level: <b id="level">1</b> &nbsp; Hi: <b id="hi">0</b></div>
+<div id="msg">Press Space or tap to start</div>
+<canvas id="c" width="560" height="480"></canvas>
+<div class="controls">
+  Move: Left / Right &nbsp; Fire: Space<br>
+  Destroy all invaders before they reach the bottom
+</div>
+<div class="mob-btns">
+  <div class="mob-btn" id="btn-left">&#8592;</div>
+  <div class="mob-btn" id="btn-fire">Fire</div>
+  <div class="mob-btn" id="btn-right">&#8594;</div>
+</div>
+<button class="btn" onclick="resetGame()">New Game</button>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const W = canvas.width, H = canvas.height;
+
+const ROWS = 5, COLS = 11;
+const INV_W = 32, INV_H = 24, INV_PAD_X = 12, INV_PAD_Y = 12;
+const PLAYER_W = 40, PLAYER_H = 16, PLAYER_SPEED = 5;
+const BULLET_SPEED = 8, INV_BULLET_SPEED = 4;
+const SHIELD_W = 48, SHIELD_H = 28;
+
+let player, bullets, invBullets, invaders, shields, score, hiScore=0, lives, level;
+let invDir, invSpeed, invMoveTimer, invMoveInterval, running, gameOver;
+const keys = {};
+
+function makeInvaders() {
+  const arr = [];
+  for (let r=0;r<ROWS;r++) {
+    for (let c=0;c<COLS;c++) {
+      arr.push({x: 60+c*(INV_W+INV_PAD_X), y: 60+r*(INV_H+INV_PAD_Y), row:r, alive:true, frame:0});
+    }
+  }
+  return arr;
+}
+
+function makeShields() {
+  const shields = [];
+  const positions = [80, 180, 280, 380, 480];
+  positions.forEach(sx => {
+    const blocks = [];
+    for (let r=0;r<4;r++) for (let c=0;c<6;c++) {
+      // Shield shape - remove corners
+      if ((r===0&&(c===0||c===5))||(r===3&&(c<2||c>3))) continue;
+      blocks.push({x:sx+c*8, y:H-90+r*8, alive:true});
+    }
+    shields.push(blocks);
+  });
+  return shields;
+}
+
+function resetGame() {
+  player = {x:W/2-PLAYER_W/2, y:H-40};
+  bullets = []; invBullets = [];
+  invaders = makeInvaders();
+  shields = makeShields();
+  score=0; lives=3; level=1;
+  invDir=1; invSpeed=1; invMoveTimer=0; invMoveInterval=40;
+  running=false; gameOver=false;
+  document.getElementById("score").textContent=0;
+  document.getElementById("lives").textContent=3;
+  document.getElementById("level").textContent=1;
+  document.getElementById("msg").textContent="Press Space or tap to start";
+  draw();
+}
+
+function shoot() {
+  if (bullets.length < 2) {
+    bullets.push({x:player.x+PLAYER_W/2, y:player.y, vy:-BULLET_SPEED});
+  }
+}
+
+function invaderShape(row, frame, x, y) {
+  // Different shapes per row
+  ctx.fillStyle = "#e0e0e0";
+  if (row <= 0) {
+    // Top row - UFO style
+    if (frame===0) {
+      ctx.fillRect(x+8,y,16,4); ctx.fillRect(x+4,y+4,24,4);
+      ctx.fillRect(x,y+8,32,8); ctx.fillRect(x+4,y+16,8,4);
+      ctx.fillRect(x+20,y+16,8,4);
+    } else {
+      ctx.fillRect(x+8,y,16,4); ctx.fillRect(x+4,y+4,24,4);
+      ctx.fillRect(x,y+8,32,8); ctx.fillRect(x+6,y+16,6,4);
+      ctx.fillRect(x+20,y+16,6,4);
+    }
+  } else if (row <= 2) {
+    // Mid rows - crab style
+    if (frame===0) {
+      ctx.fillRect(x+4,y,24,4); ctx.fillRect(x,y+4,32,8);
+      ctx.fillRect(x+4,y+12,8,4); ctx.fillRect(x+20,y+12,8,4);
+      ctx.fillRect(x,y+16,8,4); ctx.fillRect(x+24,y+16,8,4);
+    } else {
+      ctx.fillRect(x+4,y,24,4); ctx.fillRect(x,y+4,32,8);
+      ctx.fillRect(x+4,y+12,8,4); ctx.fillRect(x+20,y+12,8,4);
+      ctx.fillRect(x+4,y+16,8,4); ctx.fillRect(x+20,y+16,8,4);
+    }
+  } else {
+    // Bottom rows - squid style
+    if (frame===0) {
+      ctx.fillRect(x+8,y,16,4); ctx.fillRect(x+4,y+4,24,8);
+      ctx.fillRect(x,y+12,32,4); ctx.fillRect(x+4,y+16,8,4);
+      ctx.fillRect(x+20,y+16,8,4);
+    } else {
+      ctx.fillRect(x+8,y,16,4); ctx.fillRect(x+4,y+4,24,8);
+      ctx.fillRect(x,y+12,32,4); ctx.fillRect(x+8,y+16,6,4);
+      ctx.fillRect(x+18,y+16,6,4);
+    }
+  }
+}
+
+function update() {
+  if (!running||gameOver) return;
+
+  // Player move
+  if (keys["ArrowLeft"]||keys["a"]) player.x = Math.max(0, player.x-PLAYER_SPEED);
+  if (keys["ArrowRight"]||keys["d"]) player.x = Math.min(W-PLAYER_W, player.x+PLAYER_SPEED);
+
+  // Bullets
+  bullets = bullets.filter(b => b.y > 0);
+  bullets.forEach(b => b.y += b.vy);
+  invBullets = invBullets.filter(b => b.y < H);
+  invBullets.forEach(b => b.y += INV_BULLET_SPEED);
+
+  // Invader movement
+  invMoveTimer++;
+  if (invMoveTimer >= invMoveInterval) {
+    invMoveTimer = 0;
+    const alive = invaders.filter(i=>i.alive);
+    // Check edges
+    const rightmost = Math.max(...alive.map(i=>i.x+INV_W));
+    const leftmost = Math.min(...alive.map(i=>i.x));
+    if ((invDir>0&&rightmost>=W-10)||(invDir<0&&leftmost<=10)) {
+      invaders.forEach(i=>{if(i.alive)i.y+=16;});
+      invDir*=-1;
+    } else {
+      invaders.forEach(i=>{if(i.alive)i.x+=invDir*invSpeed*16;});
+    }
+    alive.forEach(i=>i.frame=i.frame===0?1:0);
+
+    // Invader fires
+    const cols = [...new Set(alive.map(i=>Math.round(i.x/10)))];
+    cols.forEach(col => {
+      const colInv = alive.filter(i=>Math.round(i.x/10)===col);
+      if (colInv.length&&Math.random()<0.08/cols.length*3) {
+        const bottom = colInv.reduce((b,i)=>i.y>b.y?i:b);
+        invBullets.push({x:bottom.x+INV_W/2, y:bottom.y+INV_H});
+      }
+    });
+  }
+
+  // Bullet-invader collision
+  bullets.forEach(b => {
+    invaders.forEach(inv => {
+      if (!inv.alive) return;
+      if (b.x>inv.x&&b.x<inv.x+INV_W&&b.y>inv.y&&b.y<inv.y+INV_H) {
+        inv.alive=false; b.y=-999;
+        const pts = inv.row===0?30:inv.row<=2?20:10;
+        score+=pts; document.getElementById("score").textContent=score;
+        if (score>hiScore) { hiScore=score; document.getElementById("hi").textContent=hiScore; }
+      }
+    });
+  });
+
+  // Invader bullet - shield collision
+  invBullets.forEach(b => {
+    shields.forEach(shield => {
+      shield.forEach(block => {
+        if (!block.alive) return;
+        if (b.x>=block.x&&b.x<=block.x+8&&b.y>=block.y&&b.y<=block.y+8) {
+          block.alive=false; b.y=H+999;
+        }
+      });
+    });
+  });
+
+  // Player bullet - shield collision
+  bullets.forEach(b => {
+    shields.forEach(shield => {
+      shield.forEach(block => {
+        if (!block.alive) return;
+        if (b.x>=block.x&&b.x<=block.x+8&&b.y>=block.y&&b.y<=block.y+8) {
+          block.alive=false; b.y=-999;
+        }
+      });
+    });
+  });
+
+  // Invader bullet - player collision
+  invBullets.forEach(b => {
+    if (b.x>player.x&&b.x<player.x+PLAYER_W&&b.y>player.y&&b.y<player.y+PLAYER_H) {
+      b.y=H+999; lives--;
+      document.getElementById("lives").textContent=lives;
+      if (lives<=0) { gameOver=true; running=false; document.getElementById("msg").textContent="Game Over! Score: "+score; }
+    }
+  });
+
+  // Invaders reach bottom
+  if (invaders.filter(i=>i.alive).some(i=>i.y+INV_H>=player.y)) {
+    gameOver=true; running=false; document.getElementById("msg").textContent="Invaders landed! Score: "+score;
+  }
+
+  // Level clear
+  if (invaders.every(i=>!i.alive)) {
+    level++; document.getElementById("level").textContent=level;
+    invaders=makeInvaders();
+    invMoveInterval=Math.max(10,40-level*4);
+    invSpeed=1+level*0.2;
+    bullets=[]; invBullets=[];
+  }
+}
+
+function draw() {
+  ctx.fillStyle="#000";
+  ctx.fillRect(0,0,W,H);
+
+  // Stars
+  ctx.fillStyle="#1a1a1a";
+  for (let i=0;i<60;i++) {
+    ctx.fillRect((i*173+7)%W,(i*97+13)%H,1,1);
+  }
+
+  // Invaders
+  invaders.forEach(inv => {
+    if (!inv.alive) return;
+    invaderShape(inv.row, inv.frame, inv.x, inv.y);
+  });
+
+  // Shields
+  ctx.fillStyle="#aaa";
+  shields.forEach(shield => {
+    shield.forEach(block => {
+      if (block.alive) ctx.fillRect(block.x, block.y, 7, 7);
+    });
+  });
+
+  // Player ship
+  ctx.fillStyle="#e0e0e0";
+  ctx.fillRect(player.x+16,player.y,8,4);
+  ctx.fillRect(player.x+8,player.y+4,24,4);
+  ctx.fillRect(player.x,player.y+8,PLAYER_W,8);
+
+  // Bullets
+  ctx.fillStyle="#fff";
+  bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,3,10));
+  ctx.fillStyle="#aaa";
+  invBullets.forEach(b=>ctx.fillRect(b.x-1,b.y,3,8));
+
+  // Ground line
+  ctx.fillStyle="#333";
+  ctx.fillRect(0,H-8,W,2);
+}
+
+function loop() { update(); draw(); requestAnimationFrame(loop); }
+
+document.addEventListener("keydown", e=>{
+  keys[e.key]=true;
+  if (e.key===" ") {
+    e.preventDefault();
+    if (gameOver){resetGame();return;}
+    if (!running){running=true;document.getElementById("msg").textContent="";}
+    else shoot();
+  }
+});
+document.addEventListener("keyup", e=>{ keys[e.key]=false; });
+
+// Mobile
+document.getElementById("btn-left").addEventListener("touchstart", e=>{e.preventDefault();keys["ArrowLeft"]=true;},{passive:false});
+document.getElementById("btn-left").addEventListener("touchend", e=>{keys["ArrowLeft"]=false;});
+document.getElementById("btn-right").addEventListener("touchstart", e=>{e.preventDefault();keys["ArrowRight"]=true;},{passive:false});
+document.getElementById("btn-right").addEventListener("touchend", e=>{keys["ArrowRight"]=false;});
+document.getElementById("btn-fire").addEventListener("touchstart", e=>{
+  e.preventDefault();
+  if (!running&&!gameOver){running=true;document.getElementById("msg").textContent="";}
+  else shoot();
+},{passive:false});
+
+canvas.addEventListener("touchstart", e=>{
+  if (!running&&!gameOver){running=true;document.getElementById("msg").textContent="";}
+  e.preventDefault();
+},{passive:false});
+
+resetGame();
+loop();
+</script>
+</body>
+</html>

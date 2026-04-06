@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Urban Survival Guide for Expats | ExpatPrepper.org</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="papaparse.min.js"></script>
+  <style>
+    ul { list-style-type: square; }
+    summary { list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    summary::marker { content: none; }
+
+    body, .menu button, #links-accordion summary {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 16px;
+    }
+    body {
+      background: black;
+      color: #cccccc;
+      padding: 20px;
+      margin: 0 auto;
+      max-width: 900px;
+      box-sizing: border-box;
+    }
+
+    .header pre {
+      color: #00bfff;
+      font-size: 12px;
+      line-height: 1.1;
+      white-space: pre;
+      margin-bottom: 2em;
+      text-align: center;
+    }
+    h1 {
+      color: #00bfff;
+      text-align: center;
+      font-size: 24px;
+      margin: 20px 0;
+    }
+    #boot-sequence {
+      color: #00ff00;
+      white-space: pre-line;
+      margin-bottom: 1em;
+      text-align: left;
+    }
+    #slogan {
+      color: #00ffff;
+      text-align: center;
+      font-size: 14px;
+      margin: -1em 0 0.5em;
+    }
+
+    .status-bar {
+      text-align: center;
+      font-size: 12px;
+      color: #00ff00;
+      margin-bottom: 1em;
+      padding: 6px;
+      border: 1px solid #003300;
+      background: #000016;
+    }
+    .status-bar span { color: #00bfff; }
+
+    .update-btn {
+      background: #000033;
+      color: #00ff00;
+      border: 1px solid #00bfff;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      margin-left: 10px;
+    }
+    .update-btn:hover { background: #222; }
+    .update-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .menu {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 2em;
+    }
+    .menu button {
+      background: #000033;
+      color: #00ff00;
+      border: 1px solid #00bfff;
+      padding: 8px 12px;
+      cursor: pointer;
+      flex: 1 1 calc(50% - 10px);
+      box-sizing: border-box;
+      text-align: left;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 16px;
+    }
+    .menu button:hover { background: #222; }
+
+    .section {
+      display: none;
+      margin-bottom: 2em;
+      padding: 10px;
+      border: 1px solid #00bfff;
+      background: #000033;
+    }
+    .section.active { display: block; }
+    .section h2 { color: #00ff00; font-size: 20px; margin-top: 0; }
+    .section > ul > li { color: #cccccc; margin: 4em 0 6px; padding-left: 1em; }
+    .section ul ul li { margin: 0 0 4px; padding-left: 0; }
+    .section a { color: #00bfff; text-decoration: none; }
+
+    #links-accordion {
+      margin: 2em 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    #links-accordion h2 {
+      color: #00ff00;
+      font-size: 20px;
+      text-align: center;
+      width: 100%;
+      margin-bottom: 0.5em;
+    }
+    #links-accordion details {
+      flex: 1 1 calc(50% - 10px);
+      box-sizing: border-box;
+      margin: 0;
+    }
+    #links-accordion summary {
+      background: #000033;
+      color: #00ff00;
+      border: 1px solid #00bfff;
+      padding: 8px 12px;
+      cursor: pointer;
+      line-height: 1.2;
+    }
+    #links-accordion summary:hover { background: #222; }
+    #links-accordion ul { margin: 0; padding: 4px 0 4px 40px; }
+    #links-accordion li { margin-bottom: 4px; color: #cccccc; }
+    #links-accordion a { color: #00bfff; text-decoration: none; }
+    #links-accordion a:hover { text-decoration: underline; }
+
+    #loader-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid #00bfff;
+      border-top: 4px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    .loader-msg { color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes softFlash {
+      0%,100%{ opacity:1; } 50%{ opacity:0.5; }
+    }
+    .flash-red {
+      color:#ff6666;
+      animation:softFlash 2s ease-in-out infinite;
+    }
+
+    .apps-trigger-btn {
+      background: #000000;
+      color: #00ff00;
+      border: 1px solid #00bfff;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: bold;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 16px;
+    }
+    .apps-trigger-btn:hover { background: #111111; }
+
+    .apps-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .apps-modal.open { display: flex; }
+    .apps-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+    }
+    .apps-modal-panel {
+      position: relative;
+      z-index: 1;
+      width: min(1200px, 95vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #000033;
+      border: 1px solid #00bfff;
+      padding: 24px;
+      color: #cccccc;
+    }
+    .apps-modal-panel h2 { color: #00ff00; text-align: center; margin: 0 0 10px; font-size: 22px; }
+    .apps-modal-intro { text-align: center; color: #cccccc; max-width: 850px; margin: 0 auto 20px; line-height: 1.5; }
+    .apps-modal-close {
+      position: absolute; top: 10px; right: 10px;
+      background: #000; color: #ff6666; border: 1px solid #00bfff;
+      padding: 6px 10px; cursor: pointer;
+      font-family: 'Courier New', Courier, monospace; font-size: 14px;
+    }
+    .apps-modal-close:hover { background: #111; }
+    .apps-modal-layout {
+      display: grid;
+      grid-template-columns: 1fr 280px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .apps-column { display: flex; flex-direction: column; gap: 14px; }
+    .apps-phone-wrap { display: flex; justify-content: center; align-items: flex-start; padding-top: 10px; }
+    .apps-phone-image { max-width: 100%; width: 260px; height: auto; }
+    .app-card { border: 1px solid #00bfff; background: #000016; padding: 12px; position: relative; }
+    .app-category { color: #00ff00; font-size: 12px; margin-bottom: 6px; text-transform: uppercase; padding-right: 48px; }
+    .app-card a { color: #00bfff; text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 6px; }
+    .app-card a:hover { text-decoration: underline; }
+    .app-card p { margin: 0; line-height: 1.4; color: #cccccc; font-size: 14px; }
+    .app-link { position: absolute; top: 8px; right: 10px; font-size: 12px; color: #00bfff; text-decoration: none; font-weight: normal; margin-bottom: 0; }
+    body.modal-open { overflow: hidden; }
+
+    .no-cache-msg {
+      text-align: center;
+      color: #ff6666;
+      border: 1px solid #ff6666;
+      padding: 16px;
+      margin: 20px 0;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    footer {
+      margin-top: 2em;
+      border-top: 1px solid #00bfff;
+      padding-top: 1em;
+      text-align: center;
+      font-size: 13px;
+      color: #00bfff;
+    }
+
+    @media(max-width:600px){
+      .header pre { font-size: 5px; }
+      h1 { font-size: 18px; }
+      .menu button { font-size: 14px; }
+      .apps-modal-layout { grid-template-columns: 1fr; }
+      .apps-phone-wrap { order: -1; }
+      .apps-phone-image { width: 200px; }
+    }
+    @media(max-width:950px){
+      .apps-modal-layout { grid-template-columns: 1fr; }
+      .apps-phone-wrap { order: -1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loader-overlay">
+    <div class="spinner"></div>
+    <div class="loader-msg" id="loader-msg">Loading...</div>
+  </div>
+
+  <div class="header">
+    <pre>
+_____________  ________________________   __________________________________________________________
+___  ____/_  |/ /__  __ \__    |__  __/   ___  __ \__  __ \__  ____/__  __ \__  __ \__  ____/__  __ \
+__  __/  __    /__  /_/ /_  /| |_  /________  /_/ /_  /_/ /_  __/  __  /_/ /_  /_/ /_  __/  __  /_/ /
+_  /___  _    | _  ____/_  ___ |  /_/_____/  ____/_  _, _/_  /___  _  ____/_  ____/_  /___  _  _, _/
+/_____/  /_/|_| /_/     /_/  |_/_/        /_/     /_/ |_| /_____/  /_/     /_/     /_____/  /_/ |_|
+    </pre>
+  </div>
+
+  <h1>Urban Prepping Framework</h1>
+  <div id="boot-sequence"></div>
+  <div id="slogan"></div>
+
+  <div class="status-bar">
+    Status: <span id="cache-status">Checking...</span>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    Last updated: <span id="cache-date">Never</span>
+    &nbsp;&nbsp;
+    <button class="update-btn" id="update-btn" onclick="updateContent()">Update Now</button>
+  </div>
+
+  <div style="text-align:center; margin:1em 0;">
+    <a id="checklist-link" href="#" class="flash-red"
+       style="text-decoration:none;font-weight:bold;"
+       onclick="return openChecklist()">
+      Download Printable Checklist
+    </a>
+  </div>
+
+  <div style="text-align:center; margin:0 0 1.5em;">
+    <button id="open-apps-modal" class="apps-trigger-btn">
+      Emergency / Preparedness Apps to Install
+    </button>
+  </div>
+
+  <div id="no-cache-msg" class="no-cache-msg" style="display:none;">
+    No offline content available yet.<br>
+    Connect to the internet and press <b>Update Now</b> to cache the content for offline use.
+  </div>
+
+  <div class="menu" id="menu"></div>
+  <div id="sections"></div>
+  <div id="links-accordion"></div>
+
+  <!-- Emergency Apps Modal -->
+  <div id="apps-modal" class="apps-modal" aria-hidden="true">
+    <div class="apps-modal-backdrop" id="apps-modal-backdrop"></div>
+    <div class="apps-modal-panel" role="dialog" aria-modal="true">
+      <button id="close-apps-modal" class="apps-modal-close">[X]</button>
+      <h2>Emergency / Preparedness Apps to Install</h2>
+      <p class="apps-modal-intro">
+        Installing key apps before an emergency can make a big difference if cell networks fail,
+        internet goes down, or you need to coordinate or navigate during a disaster.
+      </p>
+      <div class="apps-modal-layout">
+        <div class="apps-column">
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/app/signal-private-messenger/id874139669" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Communication</div>
+            <a href="https://apps.apple.com/app/signal-private-messenger/id874139669" target="_blank" rel="noopener">Signal - Private Messenger</a>
+            <p>Secure end-to-end encrypted messaging, voice, and video calls designed to keep communication private.</p>
+          </div>
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/ae/app/bitchat-mesh/id6748219622" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Communication</div>
+            <a href="https://apps.apple.com/ae/app/bitchat-mesh/id6748219622" target="_blank" rel="noopener">Bitchat Mesh</a>
+            <p>Bluetooth mesh messaging that can relay messages through nearby phones without internet or cell service.</p>
+          </div>
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/us/app/bridgefy-offline-messages/id975776347" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Communication</div>
+            <a href="https://apps.apple.com/us/app/bridgefy-offline-messages/id975776347" target="_blank" rel="noopener">Bridgefy - Offline Messages</a>
+            <p>Bluetooth-based messaging that works without internet, allowing communication with nearby devices.</p>
+          </div>
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/ae/app/zello-walkie-talkie/id508231856" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Communication</div>
+            <a href="https://apps.apple.com/ae/app/zello-walkie-talkie/id508231856" target="_blank" rel="noopener">Zello Walkie Talkie</a>
+            <p>Push-to-talk walkie-talkie style voice communication for individuals and groups.</p>
+          </div>
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/ae/app/voxer-walkie-talkie-messenger/id377304531" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Communication</div>
+            <a href="https://apps.apple.com/ae/app/voxer-walkie-talkie-messenger/id377304531" target="_blank" rel="noopener">Voxer Walkie Talkie Messenger</a>
+            <p>Voice messaging with push-to-talk functionality similar to a digital walkie-talkie.</p>
+          </div>
+        </div>
+        <div class="apps-phone-wrap">
+          <img src="prepper-apps-sm.png" alt="Preparedness apps" class="apps-phone-image">
+        </div>
+        <div class="apps-column">
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/ae/app/guru-maps-offline-navigation/id321745474" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Navigation &amp; Location</div>
+            <a href="https://apps.apple.com/ae/app/guru-maps-offline-navigation/id321745474" target="_blank" rel="noopener">Guru Maps - Offline Navigation</a>
+            <p>Download maps in advance and navigate using GPS without internet access.</p>
+          </div>
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/us/app/osmand-maps-travel-navigate/id934850257" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Navigation &amp; Location</div>
+            <a href="https://apps.apple.com/us/app/osmand-maps-travel-navigate/id934850257" target="_blank" rel="noopener">OsmAnd Maps</a>
+            <p>Offline maps based on OpenStreetMap with navigation, routing, and downloadable regions.</p>
+          </div>
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/us/app/what3words/id657878530" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Navigation &amp; Location</div>
+            <a href="https://apps.apple.com/us/app/what3words/id657878530" target="_blank" rel="noopener">what3words</a>
+            <p>Divides the world into small grid squares with unique three-word addresses for precise location sharing.</p>
+          </div>
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/ae/app/first-aid-ifrc/id1312876691" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Medical &amp; Emergency Help</div>
+            <a href="https://apps.apple.com/ae/app/first-aid-ifrc/id1312876691" target="_blank" rel="noopener">First Aid - IFRC (Red Cross)</a>
+            <p>Step-by-step first aid instructions and emergency guidance that can be accessed offline.</p>
+          </div>
+          <div class="app-card">
+            <a class="app-link" href="https://apps.apple.com/app/kiwix/id997079563" target="_blank" rel="noopener">Link</a>
+            <div class="app-category">Offline Knowledge</div>
+            <a href="https://apps.apple.com/app/kiwix/id997079563" target="_blank" rel="noopener">Kiwix</a>
+            <p>Download Wikipedia and other reference libraries for offline access to information.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div>Expat Prepper v2.3.1 | xPrep Offline Edition | ME NODE</div>
+    <div>https://expatprepper.org | Powered by 8128</div>
+  </footer>
+
+  <script>
+    function showLoader(msg) {
+      document.getElementById('loader-overlay').style.display='flex';
+      document.getElementById('loader-msg').textContent = msg || 'Loading...';
+    }
+    function hideLoader() { document.getElementById('loader-overlay').style.display='none'; }
+
+    const bootLines=["Initializing Expat Prepper BBS...","Loading framework modules...","Connection established...","Welcome, SYSOP..."];
+    const bootEl=document.getElementById('boot-sequence');
+    let bi=0;
+    (function animateBoot(){
+      if(bi<bootLines.length){ bootEl.innerHTML+=bootLines[bi++]+'<br>'; setTimeout(animateBoot,50); }
+    })();
+
+    const slogans=['.. STAY READY.','.. INFOSEC FIRST.','.. NODE 7 ACTIVE.'];
+    let si=0;
+    setInterval(()=>{ document.getElementById('slogan').textContent=slogans[si]; si=(si+1)%slogans.length; },3000);
+
+    async function updateStatusBar() {
+      try {
+        const res = await fetch('last_updated.json?t='+Date.now());
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('cache-date').textContent = data.date;
+          document.getElementById('cache-status').textContent = 'Offline Ready';
+          document.getElementById('cache-status').style.color = '#00ff00';
+          return true;
+        }
+      } catch(e) {}
+      document.getElementById('cache-date').textContent = 'Never';
+      document.getElementById('cache-status').textContent = 'No Cache';
+      document.getElementById('cache-status').style.color = '#ff6666';
+      return false;
+    }
+
+    async function updateContent() {
+      const btn = document.getElementById('update-btn');
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+      showLoader('Connecting to expatprepper.org...');
+      try {
+        showLoader('Fetching content from expatprepper.org...');
+        const res = await fetch('/api/expat/update', {method:'POST'});
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Update failed');
+        showLoader('Content saved to device...');
+        await updateStatusBar();
+        await renderAll();
+        document.getElementById('no-cache-msg').style.display='none';
+        document.getElementById('cache-status').textContent = 'Updated just now';
+      } catch(e) {
+        alert('Update failed. Check internet connection.\n\n'+e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Update Now';
+        hideLoader();
+      }
+    }
+
+    function renderSections(data) {
+      const menu = document.getElementById('menu');
+      const secs = document.getElementById('sections');
+      menu.innerHTML=''; secs.innerHTML='';
+      const grouped={};
+      data.forEach(r=>{
+        const key=r.Section+'. '+r.Title;
+        const det='<b>'+r.SubTitle+':</b> '+r.Details;
+        const rm = r['Read More']
+          ? '<div><b>Read More:</b><ul>'+r['Read More'].split(/\r?\n/).map(l=>l.trim()).filter(l=>l).map(l=>'<li><a href="'+l+'" target="_blank" rel="noopener">'+l+'</a></li>').join('')+'</ul></div>'
+          : '';
+        (grouped[key]=grouped[key]||[]).push(det+rm);
+      });
+      Object.entries(grouped).forEach(([t,items],i)=>{
+        const btn=document.createElement('button');
+        btn.textContent=t; btn.onclick=()=>showSection(i);
+        menu.appendChild(btn);
+      });
+      Object.entries(grouped).forEach(([t,items])=>{
+        const div=document.createElement('div');
+        div.className='section';
+        div.innerHTML='<h2>'+t+'</h2><ul>'+items.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+        secs.appendChild(div);
+      });
+    }
+
+    function renderLinks(data) {
+      const grouped={};
+      data.forEach(r=>{
+        const key=Object.keys(r)[0], cat=r[key]||'Uncategorized';
+        (grouped[cat]=grouped[cat]||[]).push(r);
+      });
+      const acc=document.getElementById('links-accordion');
+      acc.innerHTML='<h2>Shopping List - Links</h2>';
+      Object.entries(grouped).forEach(([cat,items],i)=>{
+        const d=document.createElement('details');
+        const s=document.createElement('summary');
+        s.textContent=(i+1)+'. '+cat;
+        d.appendChild(s);
+        const ul=document.createElement('ul');
+        items.forEach(it=>{
+          const li=document.createElement('li');
+          const a=document.createElement('a');
+          a.href=it.Link; a.target='_blank'; a.rel='noopener'; a.textContent=it.Title;
+          li.appendChild(a); ul.appendChild(li);
+        });
+        d.appendChild(ul);
+        acc.appendChild(d);
+      });
+      acc.querySelectorAll('details').forEach(d=>{
+        d.addEventListener('toggle',()=>{
+          if(d.open) acc.querySelectorAll('details').forEach(o=>{ if(o!==d) o.open=false; });
+        });
+      });
+    }
+
+    async function renderAll() {
+      try {
+        const [cRes, lRes] = await Promise.all([
+          fetch('content.json?t='+Date.now()),
+          fetch('links.json?t='+Date.now())
+        ]);
+        if (cRes.ok) renderSections(await cRes.json());
+        if (lRes.ok) renderLinks(await lRes.json());
+      } catch(e) { console.warn('Could not load cached content:', e); }
+    }
+
+    function showSection(i){
+      document.querySelectorAll('.section').forEach((s,idx)=>s.classList.toggle('active',idx===i));
+      window.scrollTo({top:document.getElementById('sections').offsetTop-20,behavior:'smooth'});
+    }
+
+    function openChecklist() {
+      window.open('checklist.pdf', '_blank');
+      return false;
+    }
+
+    window.addEventListener('keydown', e=>{
+      if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+      const n=parseInt(e.key,10), secs=document.querySelectorAll('.section');
+      if(!isNaN(n)&&n>=1&&n<=secs.length) showSection(n-1);
+    });
+
+    const appsModal=document.getElementById('apps-modal');
+    document.getElementById('open-apps-modal').addEventListener('click',()=>{ appsModal.classList.add('open'); document.body.classList.add('modal-open'); });
+    document.getElementById('close-apps-modal').addEventListener('click',()=>{ appsModal.classList.remove('open'); document.body.classList.remove('modal-open'); });
+    document.getElementById('apps-modal-backdrop').addEventListener('click',()=>{ appsModal.classList.remove('open'); document.body.classList.remove('modal-open'); });
+    window.addEventListener('keydown',e=>{ if(e.key==='Escape'&&appsModal.classList.contains('open')){ appsModal.classList.remove('open'); document.body.classList.remove('modal-open'); } });
+
+    // Init
+    console.log("xPrep expat: starting init");
+    updateStatusBar().then(hasCache => {
+      console.log("xPrep expat: hasCache =", hasCache);
+      if (hasCache) {
+        console.log("xPrep expat: loading cached content");
+        renderAll();
+      } else {
+        console.log("xPrep expat: no cache, showing message");
+        document.getElementById('no-cache-msg').style.display='block';
+        if (navigator.onLine) updateContent();
+      }
+    }).catch(e => console.error("xPrep expat init error:", e));
+  </script>

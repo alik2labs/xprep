@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>xPrep — Portable Knowledge Infrastructure</title>
+  <meta name="description" content="xPrep — Portable Knowledge Infrastructure. Offline access to maps, documents, videos, libraries and learning resources.">
+  <meta name="application-name" content="xPrep">
+  <meta name="theme-color" content="#5EA259">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    @font-face {
+      font-family: 'PixelifySans';
+      src: url('/fonts/PixelifySans-Bold.ttf') format('truetype');
+      font-weight: 700;
+    }
+    @font-face {
+      font-family: 'PixelifySans';
+      src: url('/fonts/PixelifySans-Regular.ttf') format('truetype');
+      font-weight: 400;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f3f3f1; color: #161616; min-height: 100vh; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 20px; background: white; border: 1px solid #ddd;
+      border-radius: 14px; padding: 20px 24px; flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .header-left h1 {
+      font-family: 'PixelifySans', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 2.2rem;
+      color: #5EA259;
+      line-height: 1;
+    }
+    .header-left p {
+      font-size: 0.82rem;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    .stat-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: #bbb;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 0.88rem;
+      color: #555;
+      font-weight: bold;
+    }
+
+    .status-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #22c55e; margin-right: 4px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: white; border-radius: 14px; padding: 14px 16px;
+      border: 1px solid #ddd; text-decoration: none; color: #161616;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 5px; text-align: center;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); border-color: #bbb; }
+    .card-title { font-size: 13px; font-weight: bold; color: #161616; }
+    .card-sub { font-size: 10px; color: #888; }
+    .card-desc { font-size: 9px; color: #aaa; line-height: 1.4; }
+
+    footer {
+      margin-top: 20px; background: white; border-radius: 14px;
+      padding: 14px 24px; font-size: 0.82rem; color: #888;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 8px;
+    }
+    .footer-logo {
+      font-family: 'PixelifySans', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #5EA259;
+    }
+    footer a { color: #888; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .footer-left { display: flex; gap: 16px; align-items: center; }
+    .footer-center { display: flex; align-items: center; }
+    .footer-right { display: flex; gap: 20px; align-items: center; }
+
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .header-right { gap: 12px; }
+    }
+    @media (max-width: 440px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    body.dark { background: #1a1a1a; color: #e0e0e0; }
+    body.dark header { background: #242424; border-color: #333; }
+    body.dark .card { background: #242424; border-color: #333; color: #e0e0e0; }
+    body.dark .card:hover { border-color: #555; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    body.dark .card-title { color: #e0e0e0; }
+    body.dark .card-sub { color: #888; }
+    body.dark .card-desc { color: #666; }
+    body.dark .card svg { stroke: #888; }
+    body.dark footer { background: #242424; border-color: #333; }
+    body.dark footer a { color: #888; }
+    body.dark .stat-value { color: #ccc; }
+    body.dark .stat-label { color: #666; }
+    body.dark .header-left p { color: #666; }
+
+    #theme-toggle {
+      background: white; border: 1px solid #ddd; border-radius: 8px;
+      padding: 6px 8px; cursor: pointer; color: #888;
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; top: 16px; right: 20px; z-index: 999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    #theme-toggle:hover { border-color: #aaa; }
+    body.dark #theme-toggle { background: #242424; border-color: #444; color: #ccc; }
+    body.dark #theme-toggle svg { stroke: #ccc; }
+    #theme-toggle svg { stroke: #888; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-left">
+      <h1>xPrep</h1>
+      <p>Portable Knowledge Infrastructure</p>
+    </div>
+    <div class="header-right">
+      <div class="stat-block">
+        <div class="stat-label">Device</div>
+        <div class="stat-value" id="stat-hostname">—</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Hotspot IP</div>
+        <div class="stat-value">55.55.55.55</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Network IP</div>
+        <div class="stat-value" id="stat-network-ip">—</div>
+      </div>
+    </div>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
+    <svg id="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:none"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    <svg id="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+  </button>
+  </header>
+
+  <div class="grid">
+__SECTION_CARDS__
+  </div>
+  <footer>
+    <div class="footer-left">
+      <span>© xPrep</span>
+      <span id="footer-version" style="color:#bbb; font-size:0.78rem;">v1.0.0</span>
+      <a href="#" onclick="window.location.href=window.location.protocol+'//'+window.location.hostname+':8080'; return false;">Admin</a>
+    </div>
+    <div class="footer-center">
+      <a href="https://expatprepper.org/xprep">expatprepper.org/xprep</a>
+    </div>
+    <div class="footer-right">
+      <div class="stat-block">
+        <div class="stat-label">Storage</div>
+        <div class="stat-value" id="stat-storage">—</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Connected</div>
+        <div class="stat-value" id="stat-users">—</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" id="stat-time">—</div>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  function updateTime() {
+    const now = new Date();
+    document.getElementById("stat-time").textContent =
+      now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  updateTime();
+  setInterval(updateTime, 60000);
+
+  async function loadStatus() {
+    try {
+      const res = await fetch("/api/status");
+      const d = await res.json();
+      if (d.hostname) document.getElementById("stat-hostname").textContent = d.hostname;
+      if (d.storage) document.getElementById("stat-storage").textContent = d.storage.free_gb + " GB";
+      if (d.connected_users !== undefined) document.getElementById("stat-users").textContent = d.connected_users + " user" + (d.connected_users !== 1 ? "s" : "");
+      if (d.version) document.getElementById("footer-version").textContent = "v" + d.version;
+      if (d.ips) {
+        const networkIp = d.ips.find(ip => !ip.startsWith("55.55.55."));
+        document.getElementById("stat-network-ip").textContent = networkIp || "—";
+      }
+    } catch(e) {}
+  }
+  loadStatus();
+
+  function setIcons(dark) {
+    const sun = document.getElementById("icon-sun");
+    const moon = document.getElementById("icon-moon");
+    if (dark) {
+      sun.style.display = "none";
+      moon.style.display = "block";
+      moon.style.stroke = "#ccc";
+    } else {
+      moon.style.display = "none";
+      sun.style.display = "block";
+      sun.style.stroke = "#888";
+    }
+  }
+
+  function toggleTheme() {
+    const dark = document.body.classList.toggle("dark");
+    localStorage.setItem("xprep-theme", dark ? "dark" : "light");
+    setIcons(dark);
+  }
+
+  const savedTheme = localStorage.getItem("xprep-theme");
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark");
+    setIcons(true);
+  } else {
+    setIcons(false);
+  }
+</script>
+</body>
+</html>

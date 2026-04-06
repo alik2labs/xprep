@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Prayer Times — xPrep</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    @font-face { font-family: 'PixelifySans'; src: url('/fonts/PixelifySans-Bold.ttf') format('truetype'); font-weight: 700; }
+    @font-face { font-family: 'PixelifySans'; src: url('/fonts/PixelifySans-Regular.ttf') format('truetype'); font-weight: 400; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f3f3f1; color: #161616; min-height: 100vh; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+    header { display: flex; justify-content: space-between; align-items: center; background: white; border: 1px solid #ddd; border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .header-left h1 { font-family: 'PixelifySans', Arial, sans-serif; font-weight: 700; font-size: 2.2rem; color: #5EA259; line-height: 1; }
+    .header-left p { font-size: 0.82rem; color: #aaa; margin-top: 4px; }
+    .card { background: white; border-radius: 14px; border: 1px solid #ddd; padding: 20px 24px; margin-bottom: 16px; }
+    .card-title { font-size: 0.72rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; }
+    .input-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    .input-row label { font-size: 0.82rem; color: #666; min-width: 130px; }
+    .input-row input, .input-row select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.88rem; background: white; flex: 1; min-width: 100px; color: #161616; }
+    .input-row input:focus, .input-row select:focus { outline: none; border-color: #5EA259; }
+    .calc-btn { background: #161616; color: white; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.88rem; cursor: pointer; margin-top: 8px; }
+    .calc-btn:hover { background: #333; }
+    .prayer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+    .prayer-card { background: #f3f3f1; border-radius: 10px; padding: 14px 16px; text-align: center; }
+    .prayer-card.next { background: #2a2a2a; color: white; }
+    .prayer-card.next .prayer-name { color: rgba(255,255,255,0.6); }
+    .prayer-name { font-size: 0.72rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .prayer-time { font-size: 1.4rem; font-weight: bold; color: #161616; }
+    .prayer-card.next .prayer-time { color: #ffffff; }
+    .prayer-remaining { font-size: 0.72rem; color: rgba(255,255,255,0.7); margin-top: 4px; }
+    .qibla-display { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-top: 12px; }
+    .qibla-compass { width: 120px; height: 120px; border-radius: 50%; border: 2px solid #ddd; position: relative; flex-shrink: 0; background: #f3f3f1; }
+    .qibla-needle { position: absolute; top: 50%; left: 50%; width: 2px; height: 50px; background: #5EA259; transform-origin: bottom center; margin-left: -1px; margin-top: -50px; border-radius: 2px 2px 0 0; }
+    .qibla-center { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: #161616; border-radius: 50%; transform: translate(-50%, -50%); }
+    .compass-n { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: #aaa; font-weight: bold; }
+    .compass-s { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: #aaa; }
+    .compass-e { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 0.7rem; color: #aaa; }
+    .compass-w { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); font-size: 0.7rem; color: #aaa; }
+    .qibla-info { flex: 1; }
+    .qibla-bearing { font-size: 2rem; font-weight: bold; color: #161616; }
+    .qibla-label { font-size: 0.82rem; color: #888; margin-top: 4px; }
+    .qibla-dist { font-size: 0.88rem; color: #555; margin-top: 8px; }
+    .hijri-date { font-size: 1.8rem; font-weight: bold; color: #161616; margin-bottom: 4px; margin-top: 12px; }
+    .hijri-label { font-size: 0.82rem; color: #888; }
+    .reference-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .reference-table th { background: #fafafa; padding: 8px 12px; text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: #aaa; border-bottom: 1px solid #eee; }
+    .reference-table td { padding: 8px 12px; border-bottom: 1px solid #f5f5f5; color: #555; }
+    .reference-table tr:last-child td { border-bottom: none; }
+    .note { font-size: 0.75rem; color: #bbb; margin-top: 10px; line-height: 1.5; }
+    .header-right { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+    .back-link:hover { color: #161616; }
+    #theme-toggle { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 6px 8px; cursor: pointer; color: #888; display: flex; align-items: center; justify-content: center; position: fixed; top: 16px; right: 20px; z-index: 999; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    body.dark { background: #1a1a1a; color: #e0e0e0; }
+    body.dark header { background: #242424; border-color: #333; }
+    body.dark .card { background: #242424; border-color: #333; }
+    body.dark .input-row input, body.dark .input-row select { background: #1a1a1a; border-color: #444; color: #e0e0e0; }
+    body.dark .prayer-card { background: #2a2a2a; }
+    body.dark .prayer-time { color: #e0e0e0; }
+    body.dark .qibla-compass { background: #2a2a2a; border-color: #444; }
+    body.dark .qibla-bearing { color: #e0e0e0; }
+    body.dark #qibla-bearing { color: #e0e0e0; }
+    body.dark #qibla-bearing-mag { color: #e0e0e0; }
+    body.dark .hijri-date { color: #e0e0e0; }
+    body.dark .reference-table th { background: #2a2a2a; }
+    body.dark .reference-table td { border-color: #333; color: #aaa; }
+    body.dark #theme-toggle { background: #242424; border-color: #444; color: #ccc; }
+    body.dark .calc-btn { background: #333; }
+    body.dark .prayer-card.next { background: #444; }
+    @media (max-width: 600px) { .prayer-grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
+  <svg id="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:none"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  <svg id="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+</button>
+<div class="wrap">
+  <header style="position:relative;">
+    <div class="header-left">
+      <h1>xPrep</h1>
+      <p>Portable Knowledge Infrastructure</p>
+    </div>
+    <div style="position:absolute;left:50%;transform:translateX(-50%);font-family:Arial,sans-serif;font-size:1.1rem;color:#888;font-weight:bold;white-space:nowrap;">Prayer Times</div>
+    <div class="header-right">
+      <a href="/" style="color:#555;text-decoration:none;font-size:0.88rem;font-weight:bold;">Back to Home</a>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="card-title">Location and Method</div>
+    <div class="input-row">
+      <label>City</label>
+      <select id="pt-city" onchange="ptSelectCity()" style="max-width:260px;">
+        <option value="">Select a city...</option>
+      </select>
+    </div>
+    <div class="input-row"><label>Latitude</label><input type="number" id="pt-lat" value="25.2048" step="0.0001"></div>
+    <div class="input-row"><label>Longitude</label><input type="number" id="pt-lon" value="55.2708" step="0.0001"></div>
+    <div class="input-row">
+      <label>Method</label>
+      <select id="pt-method" onchange="toggleCustom()">
+        <option value="uae">UAE General Authority (Fajr 19.5, Isha 90min)</option>
+        <option value="mwl">Muslim World League (Fajr 18, Isha 17)</option>
+        <option value="isna">North America ISNA (Fajr 15, Isha 15)</option>
+        <option value="egypt">Egyptian General Authority (Fajr 19.5, Isha 17.5)</option>
+        <option value="egypt2">Egyptian General Authority Bis (Fajr 20, Isha 18)</option>
+        <option value="makkah">Umm Al-Qura, Makkah (Fajr 18.5, Isha 90min)</option>
+        <option value="karachi">Islamic University, Karachi (Fajr 18, Isha 18)</option>
+        <option value="tehran">University of Tehran (Fajr 17.7, Isha 15)</option>
+        <option value="jafari">Shia Ithna Ashari Jafari (Fajr 16, Isha 14)</option>
+        <option value="jakim">JAKIM Malaysia (Fajr 20, Isha 18)</option>
+        <option value="muis">MUIS Singapore (Fajr 20, Isha 18)</option>
+        <option value="algeria">Algerian Ministry (Fajr 18, Isha 17)</option>
+        <option value="tunisia">Tunisian Ministry (Fajr 18, Isha 18)</option>
+        <option value="france15">France Angle 15 (Fajr 15, Isha 15)</option>
+        <option value="france18">France Angle 18 (Fajr 18, Isha 18)</option>
+        <option value="custom">Custom Angles</option>
+      </select>
+    </div>
+    <div id="custom-angles" style="display:none;">
+      <div class="input-row"><label>Fajr Angle</label><input type="number" id="custom-fajr" value="18" step="0.5"></div>
+      <div class="input-row"><label>Isha Angle</label><input type="number" id="custom-isha" value="17" step="0.5"></div>
+      <div class="input-row"><label>Isha Fixed Min</label><input type="number" id="custom-isha-min" value="0" step="5" placeholder="0 = use angle"></div>
+    </div>
+    <div class="input-row"><label>Date</label><input type="date" id="pt-date"></div>
+    <div class="input-row">
+      <label>Timezone Offset</label>
+      <input type="number" id="pt-tz" step="0.5" style="max-width:80px;">
+      <span style="font-size:0.78rem;color:#aaa;" id="pt-tz-note">hrs from UTC — auto-detected</span>
+    </div>
+    <button class="calc-btn" onclick="calcPrayerTimes()">Calculate</button>
+  </div>
+
+  <div class="card" id="pt-results" style="display:none;">
+    <div class="card-title">Prayer Times</div>
+    <div id="pt-date-display" style="font-size:0.88rem;color:#888;margin-bottom:12px;"></div>
+    <div class="prayer-grid" id="pt-grid"></div>
+    <p class="note" id="pt-method-note"></p>
+  </div>
+
+  <div class="card" id="pt-qibla" style="display:none;">
+    <div class="card-title">Qibla Direction</div>
+    <div class="qibla-display">
+      <div style="text-align:center;">
+        <div style="font-size:0.72rem;color:#aaa;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">True North</div>
+        <div class="qibla-compass">
+          <span class="compass-n">N</span><span class="compass-s">S</span>
+          <span class="compass-e">E</span><span class="compass-w">W</span>
+          <div class="qibla-needle" id="qibla-needle"></div>
+          <div class="qibla-center"></div>
+        </div>
+        <div style="font-size:0.78rem;font-weight:bold;color:#161616;margin-top:6px;" id="qibla-bearing">-</div>
+        <div style="font-size:0.72rem;color:#aaa;">deg from True North</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:0.72rem;color:#aaa;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Magnetic North</div>
+        <div class="qibla-compass">
+          <span class="compass-n">N</span><span class="compass-s">S</span>
+          <span class="compass-e">E</span><span class="compass-w">W</span>
+          <div class="qibla-needle" id="qibla-needle-mag"></div>
+          <div class="qibla-center"></div>
+        </div>
+        <div style="font-size:0.78rem;font-weight:bold;color:#161616;margin-top:6px;" id="qibla-bearing-mag">-</div>
+        <div style="font-size:0.72rem;color:#aaa;">deg from Magnetic North</div>
+      </div>
+      <div class="qibla-info">
+        <div class="qibla-dist" id="qibla-dist">-</div>
+        <div style="margin-top:10px;font-size:0.78rem;color:#aaa;" id="qibla-decl-note">-</div>
+        <p class="note" style="margin-top:8px;">Use True North with GPS/maps. Use Magnetic North with a handheld compass.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Hijri Date Converter</div>
+    <div class="input-row"><label>Gregorian Date</label><input type="date" id="hj-date"></div>
+    <button class="calc-btn" onclick="calcHijri()">Convert</button>
+    <div id="hj-result" style="display:none;margin-top:14px;">
+      <div class="hijri-date" id="hj-out">-</div>
+      <div class="hijri-label">Hijri date</div>
+      <div style="margin-top:8px;font-size:0.82rem;color:#888;" id="hj-out-ar">-</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Prayer Reference</div>
+    <table class="reference-table">
+      <thead><tr><th>Prayer</th><th>Arabic</th><th>Time</th><th>Fard</th><th>Sunnah (before)</th><th>Sunnah (after)</th></tr></thead>
+      <tbody>
+        <tr><td>Fajr</td><td>الفجر</td><td>Dawn - before sunrise</td><td>2</td><td>2 (Muakkadah)</td><td>-</td></tr>
+        <tr><td>Dhuhr</td><td>الظهر</td><td>Midday - after sun passes meridian</td><td>4</td><td>4 (Muakkadah)</td><td>2 (Muakkadah)</td></tr>
+        <tr><td>Asr</td><td>العصر</td><td>Afternoon</td><td>4</td><td>4 (Ghair Muakkadah)</td><td>-</td></tr>
+        <tr><td>Maghrib</td><td>المغرب</td><td>Sunset - just after sun sets</td><td>3</td><td>-</td><td>2 (Muakkadah)</td></tr>
+        <tr><td>Isha</td><td>العشاء</td><td>Night - after twilight disappears</td><td>4</td><td>-</td><td>2 (Muakkadah)</td></tr>
+        <tr><td>Witr</td><td>الوتر</td><td>After Isha - before Fajr</td><td>-</td><td>-</td><td>3 (Wajib - Hanafi / Sunnah - others)</td></tr>
+        <tr><td>Tahajjud</td><td>التهجد</td><td>Last third of night</td><td>-</td><td>-</td><td>2-12 (voluntary, highly recommended)</td></tr>
+        <tr><td>Duha</td><td>الضحى</td><td>Mid-morning after sunrise</td><td>-</td><td>-</td><td>2-12 (voluntary)</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:8px;">Muakkadah = Emphasized Sunnah (strongly recommended). Ghair Muakkadah = Non-emphasized Sunnah.</p>
+    <div style="margin-top:16px;">
+      <table class="reference-table">
+        <thead><tr><th>Method</th><th>Fajr</th><th>Isha</th><th>Regions</th></tr></thead>
+        <tbody>
+          <tr><td>UAE General Authority</td><td>19.5</td><td>90 min after Maghrib</td><td>UAE (recommended)</td></tr>
+          <tr><td>Muslim World League</td><td>18</td><td>17</td><td>Europe, Far East, Americas</td></tr>
+          <tr><td>North America (ISNA)</td><td>15</td><td>15</td><td>North America</td></tr>
+          <tr><td>Egyptian General Authority</td><td>19.5</td><td>17.5</td><td>Africa, Syria, Iraq, Malaysia</td></tr>
+          <tr><td>Umm Al-Qura (Makkah)</td><td>18.5</td><td>90 min after Maghrib</td><td>Arabian Peninsula</td></tr>
+          <tr><td>Islamic University Karachi</td><td>18</td><td>18</td><td>Pakistan, Afghanistan, Bangladesh, India</td></tr>
+          <tr><td>University of Tehran</td><td>17.7</td><td>15</td><td>Iran</td></tr>
+          <tr><td>Shia Ithna Ashari (Jafari)</td><td>16</td><td>14</td><td>Shia communities</td></tr>
+          <tr><td>JAKIM Malaysia</td><td>20</td><td>18</td><td>Malaysia</td></tr>
+          <tr><td>MUIS Singapore</td><td>20</td><td>18</td><td>Singapore</td></tr>
+          <tr><td>Algerian Ministry</td><td>18</td><td>17</td><td>Algeria</td></tr>
+          <tr><td>Tunisian Ministry</td><td>18</td><td>18</td><td>Tunisia</td></tr>
+          <tr><td>France Angle 15</td><td>15</td><td>15</td><td>France</td></tr>
+          <tr><td>France Angle 18</td><td>18</td><td>18</td><td>France</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Prayer times are calculated astronomically and may differ slightly from officially announced times. Always verify with local mosque or authority.</p>
+  </div>
+
+</div>
+<script>
+if (localStorage.getItem("xprep-theme") === "dark") document.body.classList.add("dark");
+function toggleTheme() {
+  const dark = document.body.classList.toggle("dark");
+  localStorage.setItem("xprep-theme", dark ? "dark" : "light");
+  document.getElementById("icon-sun").style.display = dark ? "block" : "none";
+  document.getElementById("icon-moon").style.display = dark ? "none" : "block";
+}
+(function() {
+  const dark = document.body.classList.contains("dark");
+  document.getElementById("icon-sun").style.display = dark ? "block" : "none";
+  document.getElementById("icon-moon").style.display = dark ? "none" : "block";
+})();
+
+const today = new Date().toISOString().split("T")[0];
+document.getElementById("pt-date").value = today;
+document.getElementById("hj-date").value = today;
+
+const PT_CITIES = [
+  ["Abu Dhabi, UAE",24.4539,54.3773,4],["Dubai, UAE",25.2048,55.2708,4],
+  ["Sharjah, UAE",25.3460,55.4209,4],["Ajman, UAE",25.4052,55.5136,4],
+  ["Muscat, Oman",23.6100,58.5930,4],["Doha, Qatar",25.2854,51.5310,3],
+  ["Riyadh, Saudi Arabia",24.6877,46.7219,3],["Jeddah, Saudi Arabia",21.5433,39.1728,3],
+  ["Makkah, Saudi Arabia",21.3891,39.8579,3],["Madinah, Saudi Arabia",24.5247,39.5692,3],
+  ["Kuwait City, Kuwait",29.3759,47.9774,3],["Manama, Bahrain",26.2154,50.5832,3],
+  ["Amman, Jordan",31.9454,35.9284,3],["Beirut, Lebanon",33.8938,35.5018,3],
+  ["Cairo, Egypt",30.0444,31.2357,2],["Istanbul, Turkey",41.0082,28.9784,3],
+  ["Tehran, Iran",35.6892,51.3890,3.5],["Karachi, Pakistan",24.8607,67.0011,5],
+  ["Islamabad, Pakistan",33.7294,73.0931,5],["Lahore, Pakistan",31.5204,74.3587,5],
+  ["Dhaka, Bangladesh",23.8103,90.4125,6],["Mumbai, India",19.0760,72.8777,5.5],
+  ["New Delhi, India",28.6139,77.2090,5.5],["Colombo, Sri Lanka",6.9271,79.8612,5.5],
+  ["Kuala Lumpur, Malaysia",3.1390,101.6869,8],["Jakarta, Indonesia",-6.2088,106.8456,7],
+  ["Singapore",1.3521,103.8198,8],["London, UK",51.5074,-0.1278,0],
+  ["Paris, France",48.8566,2.3522,1],["New York, USA",40.7128,-74.0060,-5],
+  ["Toronto, Canada",43.6510,-79.3470,-5],["Nairobi, Kenya",-1.2921,36.8219,3],
+  ["Lagos, Nigeria",6.5244,3.3792,1],["Casablanca, Morocco",33.5731,-7.5898,1],
+  ["Tunis, Tunisia",36.8065,10.1815,1],["Algiers, Algeria",36.7372,3.0865,1]
+];
+
+(function() {
+  const sel = document.getElementById("pt-city");
+  PT_CITIES.forEach((c,i) => {
+    const o = document.createElement("option");
+    o.value = i; o.textContent = c[0]; sel.appendChild(o);
+  });
+  sel.value = "1";
+  ptSelectCity();
+})();
+
+function ptSelectCity() {
+  const sel = document.getElementById("pt-city");
+  const idx = parseInt(sel.value);
+  if (isNaN(idx)) return;
+  const city = PT_CITIES[idx];
+  document.getElementById("pt-lat").value = city[1];
+  document.getElementById("pt-lon").value = city[2];
+  // Auto-set timezone from city, then check DST
+  const baseTZ = city[3];
+  const tz = getLocalTZOffset(city[1], city[2], baseTZ);
+  document.getElementById("pt-tz").value = tz;
+  document.getElementById("pt-tz-note").textContent = "hrs from UTC" + (tz !== baseTZ ? " (DST adjusted)" : " — auto-detected");
+}
+
+function getLocalTZOffset(lat, lon, baseTZ) {
+  // Use the browser's Intl API to get correct offset for the location
+  // We approximate by using the city's base offset and checking DST via known timezone names
+  const tzNames = {
+    // offset: [standard IANA timezone names]
+    "-5": "America/New_York", "-6": "America/Chicago",
+    "-8": "America/Los_Angeles", "-4": "America/Toronto",
+    "0": "Europe/London", "1": "Europe/Paris",
+    "3": "Asia/Riyadh", "4": "Asia/Dubai",
+    "5": "Asia/Karachi", "5.5": "Asia/Kolkata",
+    "6": "Asia/Dhaka", "8": "Asia/Singapore",
+    "9": "Asia/Tokyo", "10": "Australia/Sydney",
+    "2": "Africa/Cairo", "3.5": "Asia/Tehran"
+  };
+  const tzName = tzNames[String(baseTZ)];
+  if (!tzName) return baseTZ;
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: tzName,
+      timeZoneName: "shortOffset"
+    });
+    const parts = formatter.formatToParts(now);
+    const tzPart = parts.find(p => p.type === "timeZoneName");
+    if (tzPart) {
+      const match = tzPart.value.match(/GMT([+-]\d+(?::\d+)?)/);
+      if (match) {
+        const raw = match[1];
+        const [h, m] = raw.split(":").map(Number);
+        return h + (m ? m/60 : 0);
+      }
+    }
+  } catch(e) {}
+  return baseTZ;
+}
+
+function sinD(d) { return Math.sin(d*Math.PI/180); }
+function cosD(d) { return Math.cos(d*Math.PI/180); }
+
+function julianDay(y,m,d) {
+  if (m<=2){y--;m+=12;}
+  const A=Math.floor(y/100);
+  const B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5;
+}
+
+function calcPrayerTimes() {
+  const lat = parseFloat(document.getElementById("pt-lat").value);
+  const lon = parseFloat(document.getElementById("pt-lon").value);
+  const method = document.getElementById("pt-method").value;
+  const dateStr = document.getElementById("pt-date").value;
+  const date = new Date(dateStr);
+  const methods = {
+    uae:     {fajr:19.5, isha:90,   ishaFixed:true},
+    mwl:     {fajr:18,   isha:17,   ishaFixed:false},
+    isna:    {fajr:15,   isha:15,   ishaFixed:false},
+    egypt:   {fajr:19.5, isha:17.5, ishaFixed:false},
+    egypt2:  {fajr:20,   isha:18,   ishaFixed:false},
+    makkah:  {fajr:18.5, isha:90,   ishaFixed:true},
+    karachi: {fajr:18,   isha:18,   ishaFixed:false},
+    tehran:  {fajr:17.7, isha:15,   ishaFixed:false},
+    jafari:  {fajr:16,   isha:14,   ishaFixed:false},
+    jakim:   {fajr:20,   isha:18,   ishaFixed:false},
+    muis:    {fajr:20,   isha:18,   ishaFixed:false},
+    algeria: {fajr:18,   isha:17,   ishaFixed:false},
+    tunisia: {fajr:18,   isha:18,   ishaFixed:false},
+    france15:{fajr:15,   isha:15,   ishaFixed:false},
+    france18:{fajr:18,   isha:18,   ishaFixed:false},
+    custom:  {fajr:18,   isha:17,   ishaFixed:false}
+  };
+  let m = methods[method] || methods.mwl;
+  if (method === 'custom') {
+    const cf = parseFloat(document.getElementById("custom-fajr").value) || 18;
+    const ci = parseFloat(document.getElementById("custom-isha").value) || 17;
+    const cm = parseFloat(document.getElementById("custom-isha-min").value) || 0;
+    m = {fajr: cf, isha: cm > 0 ? cm : ci, ishaFixed: cm > 0};
+  }
+
+  // Get timezone from input (auto-detected or manually overridden)
+  let tzOffset = parseFloat(document.getElementById("pt-tz").value);
+  if (isNaN(tzOffset)) {
+    const sel = document.getElementById("pt-city");
+    const cityIdx = parseInt(sel.value);
+    tzOffset = !isNaN(cityIdx) && PT_CITIES[cityIdx] ? PT_CITIES[cityIdx][3] : lon/15;
+  }
+
+  const JD = julianDay(date.getFullYear(),date.getMonth()+1,date.getDate());
+  const D = JD-2451545.0;
+  const g = (357.529+0.98560028*D)%360;
+  const q = (280.459+0.98564736*D)%360;
+  const L = (q+1.915*sinD(g)+0.020*sinD(2*g))%360;
+  const e = 23.439-0.00000036*D;
+  const RA = Math.atan2(cosD(e)*sinD(L),cosD(L))*180/Math.PI/15;
+  const dec = Math.asin(sinD(e)*sinD(L))*180/Math.PI;
+  const EqT = q/15-((RA+24)%24);
+  // Transit in UTC
+  const transitUTC = 12-lon/15-EqT;
+
+  function hourAngle(angle) {
+    const cosHour = (sinD(angle) - sinD(lat)*sinD(dec)) / (cosD(lat)*cosD(dec));
+    if (Math.abs(cosHour) > 1) return null;
+    return Math.acos(cosHour) * 180/Math.PI / 15;
+  }
+
+  const sunriseHA = hourAngle(-0.833);
+  const fajrHA    = hourAngle(-m.fajr);
+  const ishaHA    = m.ishaFixed ? null : hourAngle(-m.isha);
+
+  function asrHA() {
+    const targetAlt = Math.atan(1 / (1 + Math.tan(Math.abs(lat - dec) * Math.PI/180))) * 180/Math.PI;
+    const cosH = (sinD(targetAlt) - sinD(lat)*sinD(dec)) / (cosD(lat)*cosD(dec));
+    if (Math.abs(cosH) > 1) return null;
+    return Math.acos(cosH) * 180/Math.PI / 15;
+  }
+
+  const asrH = asrHA();
+
+  const fajrUTC    = fajrHA    !== null ? transitUTC - fajrHA    : null;
+  const sunriseUTC = sunriseHA !== null ? transitUTC - sunriseHA : null;
+  const dhuhrUTC   = transitUTC + 1/60;
+  const asrUTC     = asrH      !== null ? transitUTC + asrH      : null;
+  const sunsetUTC  = sunriseHA !== null ? transitUTC + sunriseHA : null;
+  const maghribUTC = sunsetUTC;
+  const ishaUTC    = m.ishaFixed
+    ? (maghribUTC !== null ? maghribUTC + m.isha/60 : null)
+    : (ishaHA !== null ? transitUTC + ishaHA : null);
+
+  // Apply timezone offset
+  const applyTZ = t => t !== null ? t + tzOffset : null;
+  const fajr    = applyTZ(fajrUTC);
+  const sunrise = applyTZ(sunriseUTC);
+  const dhuhr   = applyTZ(dhuhrUTC);
+  const asr     = applyTZ(asrUTC);
+  const maghrib = applyTZ(maghribUTC);
+  const isha    = applyTZ(ishaUTC);
+
+  function fmtTime(t) {
+    if (t===null) return "--:--";
+    t=((t%24)+24)%24;
+    const h=Math.floor(t);
+    const min=Math.round((t-h)*60);
+    const hh=h%12||12;
+    const ampm=h>=12?"PM":"AM";
+    return hh+":"+String(min).padStart(2,"0")+" "+ampm;
+  }
+
+  const prayers = [
+    {name:"Fajr",time:fajr},{name:"Sunrise",time:sunrise},
+    {name:"Dhuhr",time:dhuhr},{name:"Asr",time:asr},
+    {name:"Maghrib",time:maghrib},{name:"Isha",time:isha}
+  ];
+
+  const nowH = new Date().getHours()+new Date().getMinutes()/60;
+  let nextIdx = -1;
+  for (let i=0;i<prayers.length;i++) {
+    if (prayers[i].time!==null&&prayers[i].time>nowH){nextIdx=i;break;}
+  }
+
+  const grid = document.getElementById("pt-grid");
+  grid.innerHTML = prayers.map((p,i) => {
+    const isNext = i===nextIdx;
+    let remaining = "";
+    if (isNext&&p.time!==null) {
+      const mins=Math.round((p.time-nowH)*60);
+      remaining=mins>60?Math.floor(mins/60)+"h "+mins%60+"m":mins+"m";
+    }
+    return '<div class="prayer-card'+(isNext?" next":"")+'">'+
+      '<div class="prayer-name">'+p.name+'</div>'+
+      '<div class="prayer-time">'+fmtTime(p.time)+'</div>'+
+      (isNext?'<div class="prayer-remaining">in '+remaining+'</div>':'')+
+      '</div>';
+  }).join("");
+
+  const methodNames = {
+    uae:"UAE General Authority",mwl:"Muslim World League",isna:"North America (ISNA)",
+    egypt:"Egyptian General Authority",egypt2:"Egyptian General Authority (Bis)",
+    makkah:"Umm Al-Qura (Makkah)",karachi:"Islamic University Karachi",
+    tehran:"University of Tehran",jafari:"Shia Ithna Ashari (Jafari)",
+    jakim:"JAKIM Malaysia",muis:"MUIS Singapore",algeria:"Algerian Ministry",
+    tunisia:"Tunisian Ministry",france15:"France Angle 15",france18:"France Angle 18",
+    custom:"Custom Angles"
+  };
+  document.getElementById("pt-date-display").textContent = date.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  document.getElementById("pt-method-note").textContent = "Method: "+methodNames[method];
+  document.getElementById("pt-results").style.display = "block";
+  calcQibla(lat,lon);
+}
+
+function calcQibla(lat,lon) {
+  const MLAT=21.3891,MLON=39.8579;
+  const lat1=lat*Math.PI/180,lat2=MLAT*Math.PI/180;
+  const dLon=(MLON-lon)*Math.PI/180;
+  const y=Math.sin(dLon)*Math.cos(lat2);
+  const x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+  const bearing=((Math.atan2(y,x)*180/Math.PI)+360)%360;
+  const dLat2=lat2-lat1;
+  const a=Math.sin(dLat2/2)*Math.sin(dLat2/2)+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  const dist=6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+
+  // Estimate magnetic declination using simplified WMM model
+  // Positive = east (compass points east of true north)
+  const decl = getMagneticDeclination(lat, lon);
+  const magBearing = ((bearing - decl) + 360) % 360;
+
+  document.getElementById("qibla-bearing").textContent = bearing.toFixed(1)+"°";
+  document.getElementById("qibla-needle").style.transform = "rotate("+bearing+"deg)";
+  document.getElementById("qibla-bearing-mag").textContent = magBearing.toFixed(1)+"°";
+  document.getElementById("qibla-needle-mag").style.transform = "rotate("+magBearing+"deg)";
+  document.getElementById("qibla-dist").textContent = "Distance to Makkah: "+Math.round(dist).toLocaleString()+" km";
+  const declDir = decl >= 0 ? "East" : "West";
+  document.getElementById("qibla-decl-note").textContent = "Magnetic declination: "+Math.abs(decl).toFixed(1)+"° "+declDir+" (estimated)";
+  document.getElementById("pt-qibla").style.display = "block";
+}
+
+function getMagneticDeclination(lat, lon) {
+  // Simplified magnetic declination estimation
+  // Based on approximate regional values — accurate to within 2-3 degrees for most locations
+  // For precise values use NOAA WMM (requires internet)
+  const year = new Date().getFullYear() + new Date().getMonth()/12;
+  const t = year - 2020;
+
+  // Simplified dipole model approximation
+  const latR = lat * Math.PI/180;
+  const lonR = lon * Math.PI/180;
+
+  // Geomagnetic north pole approx location (moves ~0.5 deg/year)
+  const pLat = (80.65 + 0.17*t) * Math.PI/180;
+  const pLon = (-72.68 + 0.46*t) * Math.PI/180;
+
+  const sinD = Math.sin(latR)*Math.sin(pLat) + Math.cos(latR)*Math.cos(pLat)*Math.cos(lonR-pLon);
+  const cosD = Math.sqrt(1 - sinD*sinD);
+  const sinA = Math.cos(pLat)*Math.sin(lonR-pLon)/cosD;
+  const cosA = (Math.sin(pLat)-sinD*Math.sin(latR))/(cosD*Math.cos(latR));
+  const decl = Math.atan2(sinA,cosA)*180/Math.PI;
+
+  return Math.round(decl*10)/10;
+}
+
+function calcHijri() {
+  const dateStr = document.getElementById("hj-date").value;
+  if (!dateStr) return;
+  const d = new Date(dateStr);
+  const jd = julianDay(d.getFullYear(),d.getMonth()+1,d.getDate());
+  const l=jd-1948440+10632;
+  const n=Math.floor((l-1)/10631);
+  const l2=l-10631*n+354;
+  const j=Math.floor((10985-l2)/5316)*Math.floor(50*l2/17719)+Math.floor(l2/5670)*Math.floor(43*l2/15238);
+  const l3=l2-Math.floor((30-j)/15)*Math.floor(17719*j/50)-Math.floor(j/16)*Math.floor(15238*j/43)+29;
+  const month=Math.floor(24*l3/709);
+  const day=l3-Math.floor(709*month/24);
+  const year=30*n+j-30;
+  const mn=["Muharram","Safar","Rabi al-Awwal","Rabi al-Thani","Jumada al-Awwal","Jumada al-Thani","Rajab","Shaban","Ramadan","Shawwal","Dhul Qadah","Dhul Hijjah"];
+  const mnar=["محرم","صفر","ربيع الأول","ربيع الثاني","جمادى الأولى","جمادى الثانية","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"];
+  document.getElementById("hj-out").textContent = day+" "+mn[month-1]+" "+year+" AH";
+  document.getElementById("hj-out-ar").textContent = day+" "+mnar[month-1]+" "+year+" هـ";
+  document.getElementById("hj-result").style.display = "block";
+}
+
+function toggleCustom() {
+  const method = document.getElementById("pt-method").value;
+  document.getElementById("custom-angles").style.display = method === "custom" ? "block" : "none";
+}
+
+window.onload = function() {
+  // Auto-detect TZ for default city (Dubai)
+  const defaultCity = PT_CITIES[1]; // Dubai
+  const tz = getLocalTZOffset(defaultCity[1], defaultCity[2], defaultCity[3]);
+  document.getElementById("pt-tz").value = tz;
+  document.getElementById("pt-tz-note").textContent = "hrs from UTC" + (tz !== defaultCity[3] ? " (DST adjusted)" : " - auto-detected");
+  calcPrayerTimes();
+  calcHijri();
+};
+</script>
+</body>
+</html>

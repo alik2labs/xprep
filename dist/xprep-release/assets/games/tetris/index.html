@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tetris — xPrep Games</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1a1a1a; color: #e0e0e0; font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+    h1 { font-size: 1.2rem; color: #aaa; margin-bottom: 8px; letter-spacing: 0.1em; }
+    .game-wrap { display: flex; gap: 20px; align-items: flex-start; }
+    canvas { background: #000; border: 2px solid #333; border-radius: 4px; display: block; }
+    .side { display: flex; flex-direction: column; gap: 16px; min-width: 100px; }
+    .side-box { background: #242424; border: 1px solid #333; border-radius: 10px; padding: 12px; }
+    .side-label { font-size: 0.68rem; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .side-value { font-size: 1.3rem; font-weight: bold; color: #e0e0e0; }
+    .controls { margin-top: 14px; font-size: 0.78rem; color: #555; text-align: center; line-height: 1.9; }
+    .controls span { color: #888; }
+    .btn { background: #333; color: #e0e0e0; border: none; border-radius: 8px; padding: 8px 20px; font-size: 0.85rem; cursor: pointer; margin-top: 10px; width: 100%; }
+    .btn:hover { background: #444; }
+    .back { position: fixed; top: 16px; left: 20px; font-size: 0.82rem; color: #555; text-decoration: none; }
+    .back:hover { color: #aaa; }
+    #msg { font-size: 0.9rem; color: #5EA259; margin-bottom: 8px; height: 24px; text-align: center; }
+    .mobile-btns { display: none; margin-top: 14px; }
+    @media (max-width: 600px) { .mobile-btns { display: grid; grid-template-columns: repeat(4, 56px); gap: 6px; } .game-wrap { gap: 12px; } }
+    .mob-btn { background: #2a2a2a; border: 1px solid #444; border-radius: 8px; color: #888; font-size: 1.1rem; cursor: pointer; padding: 12px 0; text-align: center; }
+    .mob-btn:active { background: #444; }
+  </style>
+</head>
+<body>
+<a href="/games/" class="back">Back to Games</a>
+<h1>TETRIS</h1>
+<div id="msg">Press Space or tap to start</div>
+<div class="game-wrap">
+  <canvas id="c" width="200" height="400"></canvas>
+  <div class="side">
+    <div class="side-box">
+      <div class="side-label">Score</div>
+      <div class="side-value" id="score">0</div>
+    </div>
+    <div class="side-box">
+      <div class="side-label">Level</div>
+      <div class="side-value" id="level">1</div>
+    </div>
+    <div class="side-box">
+      <div class="side-label">Lines</div>
+      <div class="side-value" id="lines">0</div>
+    </div>
+    <div class="side-box">
+      <div class="side-label">Next</div>
+      <canvas id="next" width="80" height="80"></canvas>
+    </div>
+    <button class="btn" onclick="startGame()">New Game</button>
+  </div>
+</div>
+<div class="controls">
+  <span>Move:</span> Left / Right &nbsp; <span>Rotate:</span> Up &nbsp; <span>Drop:</span> Down<br>
+  <span>Hard drop:</span> Space &nbsp; <span>Pause:</span> P
+</div>
+<div class="mobile-btns">
+  <div class="mob-btn" onclick="move(-1)">←</div>
+  <div class="mob-btn" onclick="rotate()">↻</div>
+  <div class="mob-btn" onclick="move(1)">→</div>
+  <div class="mob-btn" onclick="hardDrop()">↓↓</div>
+</div>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const nextCanvas = document.getElementById("next");
+const nctx = nextCanvas.getContext("2d");
+const COLS = 10, ROWS = 20, BS = 20;
+
+const PIECES = [
+  {shape:[[1,1,1,1]], color:"#00bcd4"},           // I
+  {shape:[[1,1],[1,1]], color:"#ffeb3b"},           // O
+  {shape:[[0,1,0],[1,1,1]], color:"#9c27b0"},       // T
+  {shape:[[0,1,1],[1,1,0]], color:"#4caf50"},       // S
+  {shape:[[1,1,0],[0,1,1]], color:"#f44336"},       // Z
+  {shape:[[1,0,0],[1,1,1]], color:"#ff9800"},       // J
+  {shape:[[0,0,1],[1,1,1]], color:"#2196f3"},       // L
+];
+
+let board, piece, nextPiece, score, level, lines, running, gameOver, dropInterval, dropTimer;
+
+function newPiece() {
+  const p = nextPiece || PIECES[Math.floor(Math.random()*PIECES.length)];
+  nextPiece = PIECES[Math.floor(Math.random()*PIECES.length)];
+  return {
+    shape: p.shape.map(r=>[...r]),
+    color: p.color,
+    x: Math.floor(COLS/2) - Math.floor(p.shape[0].length/2),
+    y: 0
+  };
+}
+
+function startGame() {
+  board = Array.from({length:ROWS}, () => Array(COLS).fill(null));
+  score = 0; level = 1; lines = 0;
+  nextPiece = PIECES[Math.floor(Math.random()*PIECES.length)];
+  piece = newPiece();
+  gameOver = false; running = false;
+  document.getElementById("score").textContent = 0;
+  document.getElementById("level").textContent = 1;
+  document.getElementById("lines").textContent = 0;
+  document.getElementById("msg").textContent = "Press Space or tap to start";
+  clearInterval(dropInterval);
+  draw();
+}
+
+function valid(p, dx=0, dy=0, shape=null) {
+  const s = shape || p.shape;
+  return s.every((row, r) => row.every((v, c) => {
+    if (!v) return true;
+    const nx = p.x+c+dx, ny = p.y+r+dy;
+    return nx>=0 && nx<COLS && ny<ROWS && (ny<0 || !board[ny][nx]);
+  }));
+}
+
+function rotateShape(s) {
+  return s[0].map((_,i) => s.map(r=>r[i]).reverse());
+}
+
+function rotate() {
+  const ns = rotateShape(piece.shape);
+  if (valid(piece, 0, 0, ns)) piece.shape = ns;
+  else if (valid(piece, 1, 0, ns)) { piece.x++; piece.shape = ns; }
+  else if (valid(piece, -1, 0, ns)) { piece.x--; piece.shape = ns; }
+  draw();
+}
+
+function move(dx) {
+  if (valid(piece, dx, 0)) { piece.x += dx; draw(); }
+}
+
+function drop() {
+  if (valid(piece, 0, 1)) { piece.y++; }
+  else { lock(); }
+  draw();
+}
+
+function hardDrop() {
+  while (valid(piece, 0, 1)) piece.y++;
+  lock();
+  draw();
+}
+
+function lock() {
+  piece.shape.forEach((row, r) => row.forEach((v, c) => {
+    if (v && piece.y+r >= 0) board[piece.y+r][piece.x+c] = piece.color;
+  }));
+  // Clear lines
+  let cleared = 0;
+  for (let r = ROWS-1; r >= 0; r--) {
+    if (board[r].every(c => c)) {
+      board.splice(r, 1);
+      board.unshift(Array(COLS).fill(null));
+      cleared++; r++;
+    }
+  }
+  if (cleared) {
+    const pts = [0,100,300,500,800];
+    score += pts[cleared] * level;
+    lines += cleared;
+    level = Math.floor(lines/10)+1;
+    document.getElementById("score").textContent = score.toLocaleString();
+    document.getElementById("level").textContent = level;
+    document.getElementById("lines").textContent = lines;
+    clearInterval(dropInterval);
+    dropInterval = setInterval(drop, Math.max(100, 600-level*50));
+  }
+  piece = newPiece();
+  if (!valid(piece, 0, 0)) {
+    gameOver = true; running = false;
+    clearInterval(dropInterval);
+    document.getElementById("msg").textContent = "Game Over! Score: "+score.toLocaleString()+" — Space to restart";
+  }
+}
+
+function ghostY() {
+  let gy = piece.y;
+  while (valid(piece, 0, gy-piece.y+1)) gy++;
+  return gy;
+}
+
+function draw() {
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Grid
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 0.5;
+  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
+    ctx.strokeRect(c*BS, r*BS, BS, BS);
+  }
+  // Board
+  board.forEach((row,r) => row.forEach((color,c) => {
+    if (color) drawBlock(ctx, c, r, color);
+  }));
+  // Ghost
+  const gy = ghostY();
+  piece.shape.forEach((row,r) => row.forEach((v,c) => {
+    if (v) {
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.fillRect((piece.x+c)*BS+1, (gy+r)*BS+1, BS-2, BS-2);
+    }
+  }));
+  // Piece
+  piece.shape.forEach((row,r) => row.forEach((v,c) => {
+    if (v) drawBlock(ctx, piece.x+c, piece.y+r, piece.color);
+  }));
+  // Next piece
+  nctx.fillStyle = "#000";
+  nctx.fillRect(0,0,80,80);
+  if (nextPiece) {
+    const offX = Math.floor((4-nextPiece.shape[0].length)/2);
+    const offY = Math.floor((4-nextPiece.shape.length)/2);
+    nextPiece.shape.forEach((row,r) => row.forEach((v,c) => {
+      if (v) {
+        nctx.fillStyle = nextPiece.color;
+        nctx.fillRect((offX+c)*16+8, (offY+r)*16+8, 14, 14);
+      }
+    }));
+  }
+}
+
+function drawBlock(c, x, y, color) {
+  c.fillStyle = color;
+  c.fillRect(x*BS+1, y*BS+1, BS-2, BS-2);
+  c.fillStyle = "rgba(255,255,255,0.2)";
+  c.fillRect(x*BS+1, y*BS+1, BS-2, 4);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === " ") {
+    e.preventDefault();
+    if (gameOver) { startGame(); return; }
+    if (!running) {
+      running = true;
+      document.getElementById("msg").textContent = "";
+      dropInterval = setInterval(drop, Math.max(100, 600-level*50));
+    } else { hardDrop(); }
+    return;
+  }
+  if (e.key === "p" || e.key === "P") {
+    if (!running && !gameOver) return;
+    running = !running;
+    if (running) {
+      document.getElementById("msg").textContent = "";
+      dropInterval = setInterval(drop, Math.max(100, 600-level*50));
+    } else {
+      clearInterval(dropInterval);
+      document.getElementById("msg").textContent = "Paused";
+    }
+    return;
+  }
+  if (!running) return;
+  if (e.key==="ArrowLeft") { e.preventDefault(); move(-1); }
+  if (e.key==="ArrowRight") { e.preventDefault(); move(1); }
+  if (e.key==="ArrowDown") { e.preventDefault(); drop(); }
+  if (e.key==="ArrowUp") { e.preventDefault(); rotate(); }
+});
+
+// Touch swipe for Tetris
+let tx=null, ty=null;
+canvas.addEventListener("touchstart", e => {
+  tx=e.touches[0].clientX; ty=e.touches[0].clientY;
+  if (!running && !gameOver) {
+    running=true; document.getElementById("msg").textContent="";
+    dropInterval=setInterval(drop, Math.max(100,600-level*50));
+  }
+  e.preventDefault();
+},{passive:false});
+canvas.addEventListener("touchend", e => {
+  if (tx===null) return;
+  const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if (Math.abs(dx)<10&&Math.abs(dy)<10) rotate();
+  else if (Math.abs(dx)>Math.abs(dy)) move(dx>0?1:-1);
+  else if (dy>0) hardDrop();
+  tx=null; ty=null;
+  e.preventDefault();
+},{passive:false});
+
+startGame();
+</script>
+</body>
+</html>

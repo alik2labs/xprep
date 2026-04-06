@@ -1,0 +1,5 @@
+xprep placeholder book
+
+This is the default starter book for the xprep Calibre library.
+
+You can delete this later and replace it with your own books.

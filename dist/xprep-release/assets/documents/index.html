@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Documents — xPrep</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/documents/vendor/marked.min.js"></script>
+  <script src="/documents/vendor/mammoth.min.js"></script>
+  <script src="/documents/vendor/xlsx.min.js"></script>
+  <script src="/documents/vendor/pdf.min.js"></script>
+  <style>
+    @font-face { font-family: 'PixelifySans'; src: url('/fonts/PixelifySans-Bold.ttf') format('truetype'); font-weight: 700; }
+    @font-face { font-family: 'PixelifySans'; src: url('/fonts/PixelifySans-Regular.ttf') format('truetype'); font-weight: 400; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f3f3f1; color: #161616; min-height: 100vh; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 20px; background: white; border: 1px solid #ddd;
+      border-radius: 14px; padding: 20px 24px; flex-wrap: wrap;
+      margin-bottom: 20px; position: relative;
+    }
+    .header-left h1 { font-family: 'PixelifySans', Arial, sans-serif; font-weight: 700; font-size: 2.2rem; color: #5EA259; line-height: 1; }
+    .header-left p { font-size: 0.82rem; color: #aaa; margin-top: 4px; }
+    .header-right { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+    .stat-block { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .stat-label { font-size: 0.72rem; color: #bbb; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-value { font-size: 0.88rem; color: #555; font-weight: bold; }
+
+    .search-bar { margin-bottom: 16px; }
+    .search-bar input {
+      width: 100%; max-width: 400px; padding: 10px 14px;
+      border-radius: 8px; border: 1px solid #ddd;
+      background: white; color: #161616; font-size: 0.9rem;
+    }
+    .search-bar input:focus { outline: none; border-color: #5EA259; }
+
+    #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+
+    .card { background: white; border-radius: 14px; overflow: hidden; border: 1px solid #ddd; transition: box-shadow 0.15s, border-color 0.15s; }
+    .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); border-color: #bbb; }
+    .card-thumb { width: 100%; aspect-ratio: 16/9; background: #f3f3f1; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; }
+    .card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .card-thumb canvas { width: 100%; height: 100%; object-fit: contain; }
+    .card-thumb .video-thumb { width: 100%; height: 100%; object-fit: cover; }
+    .thumb-icon { font-size: 2rem; }
+    .text-preview { font-size: 0.6rem; color: #888; padding: 8px; line-height: 1.4; overflow: hidden; max-height: 100%; text-align: left; }
+    .card-info { padding: 10px 12px; }
+    .card-title { font-size: 0.82rem; font-weight: bold; color: #161616; margin-bottom: 4px; line-height: 1.3; }
+    .card-ext { font-size: 0.7rem; color: #aaa; text-transform: uppercase; margin-bottom: 8px; }
+    .card-actions { display: flex; gap: 6px; }
+    .btn { padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; text-decoration: none; border: 1px solid #ddd; background: white; color: #555; }
+    .btn:hover { border-color: #aaa; }
+    .btn-open { background: #161616; color: white; border-color: #161616; }
+    .btn-open:hover { background: #333; }
+
+    #loading { text-align: center; padding: 40px; color: #aaa; font-size: 0.9rem; }
+    #empty { display: none; text-align: center; padding: 60px 20px; color: #aaa; }
+
+    /* Modal */
+    #modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+    #modal.open { display:flex; }
+    #modal-inner { background:white; border-radius:14px; width:100%; max-width:860px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+    #modal-header { display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1px solid #eee; }
+    #modal-title { font-size:0.9rem; font-weight:bold; color:#161616; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%; }
+    #modal-close { background:none; border:none; font-size:1.2rem; cursor:pointer; color:#aaa; padding:4px 8px; }
+    #modal-close:hover { color:#161616; }
+    #modal-body { flex:1; overflow:auto; padding:20px; }
+    #modal-body iframe { width:100%; height:60vh; border:none; }
+    #modal-body img { max-width:100%; display:block; margin:0 auto; }
+    #modal-body video { width:100%; border-radius:8px; }
+    #modal-body audio { width:100%; }
+    #modal-body pre { font-size:0.82rem; white-space:pre-wrap; color:#333; line-height:1.6; }
+    .md-body { font-size:0.88rem; line-height:1.7; color:#333; }
+    .md-body h1,.md-body h2,.md-body h3 { margin:16px 0 8px; }
+    .md-body p { margin-bottom:10px; }
+    .md-body code { background:#f3f3f1; padding:2px 6px; border-radius:4px; font-size:0.82rem; }
+    .docx-body { font-size:0.88rem; line-height:1.7; }
+    .csv-table { overflow:auto; }
+    .csv-table table { border-collapse:collapse; font-size:0.8rem; width:100%; }
+    .csv-table th,.csv-table td { border:1px solid #eee; padding:6px 10px; text-align:left; }
+    .csv-table th { background:#f3f3f1; font-weight:bold; }
+    .no-preview { text-align:center; padding:40px; color:#888; }
+    .no-preview .icon { font-size:3rem; margin-bottom:12px; }
+    .no-preview a { display:inline-block; margin-top:12px; color:#161616; font-weight:bold; }
+
+    #theme-toggle {
+      background: white; border: 1px solid #ddd; border-radius: 8px;
+      padding: 6px 8px; cursor: pointer; color: #888;
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; top: 16px; right: 20px; z-index: 999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    #theme-toggle:hover { border-color: #aaa; }
+    body.dark #theme-toggle { background: #242424; border-color: #444; color: #ccc; }
+    body.dark #theme-toggle svg { stroke: #ccc; }
+    #theme-toggle svg { stroke: #888; }
+
+    body.dark { background: #1a1a1a; color: #e0e0e0; }
+    body.dark header { background: #242424; border-color: #333; }
+    body.dark .card { background: #242424; border-color: #333; }
+    body.dark .card:hover { border-color: #555; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    body.dark .card-title { color: #e0e0e0; }
+    body.dark .card-thumb { background: #2a2a2a; }
+    body.dark .btn { background: #2a2a2a; border-color: #444; color: #aaa; }
+    body.dark .btn-open { background: #444; color: white; border-color: #444; }
+    body.dark .stat-value { color: #ccc; }
+    body.dark .stat-label { color: #666; }
+    body.dark .header-left p { color: #666; }
+    body.dark .search-bar input { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
+    body.dark #modal-inner { background: #242424; }
+    body.dark #modal-header { border-color: #333; }
+    body.dark #modal-title { color: #e0e0e0; }
+    body.dark #modal-body pre { color: #ccc; }
+    body.dark .md-body { color: #ccc; }
+    body.dark .csv-table th { background: #2a2a2a; }
+    body.dark .csv-table th, body.dark .csv-table td { border-color: #333; }
+
+    @media (max-width: 700px) { .header-right { gap: 12px; } }
+  </style>
+</head>
+<body>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
+  <svg id="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:none"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  <svg id="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+</button>
+
+<div class="wrap">
+  <header style="position:relative;">
+    <div class="header-left">
+      <h1>xPrep</h1>
+      <p>Portable Knowledge Infrastructure</p>
+    </div>
+    <div style="position:absolute;left:50%;transform:translateX(-50%);font-family:Arial,sans-serif;font-size:1.1rem;color:#888;font-weight:bold;white-space:nowrap;">Documents</div>
+    <div class="header-right">
+      <div class="stat-block">
+        <div class="stat-label">Library</div>
+        <div class="stat-value" id="subtitle">Loading...</div>
+      </div>
+      <a href="/" style="color:#555;text-decoration:none;font-size:0.88rem;font-weight:bold;align-self:center;">Back to Home</a>
+    </div>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search documents..." oninput="filterDocs()">
+  </div>
+
+  <div id="loading">Loading documents...</div>
+  <div id="grid"></div>
+  <div id="empty">
+    <svg width="48" height="48" viewBox="0 0 40 40" fill="none" stroke="#ddd" stroke-width="1.5"><rect x="8" y="4" width="20" height="26" rx="2"/><path d="M22 4v8h6"/><line x1="12" y1="18" x2="24" y2="18"/><line x1="12" y1="22" x2="24" y2="22"/></svg>
+    <p style="margin-top:12px;">No documents found</p>
+  </div>
+
+  <div id="modal">
+    <div id="modal-inner">
+      <div id="modal-header">
+        <div id="modal-title">Document</div>
+        <button id="modal-close">&#x2715;</button>
+      </div>
+      <div id="modal-body"><div style="padding:40px;text-align:center;color:#888;">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  if (localStorage.getItem("xprep-theme") === "dark") document.body.classList.add("dark");
+  function toggleTheme() {
+    const dark = document.body.classList.toggle("dark");
+    localStorage.setItem("xprep-theme", dark ? "dark" : "light");
+    document.getElementById("icon-sun").style.display = dark ? "block" : "none";
+    document.getElementById("icon-moon").style.display = dark ? "none" : "block";
+  }
+  (function() {
+    const dark = document.body.classList.contains("dark");
+    document.getElementById("icon-sun").style.display = dark ? "block" : "none";
+    document.getElementById("icon-moon").style.display = dark ? "none" : "block";
+  })();
+</script>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "/documents/vendor/pdf.worker.min.js";
+
+    let allDocs = [];
+
+    const EXT_ICON = {
+      pdf:"📕", epub:"📗", txt:"📝", md:"📝", docx:"📘", doc:"📘",
+      xlsx:"📊", xls:"📊", pptx:"📙", ppt:"📙", csv:"📋",
+      jpg:"🖼️", jpeg:"🖼️", png:"🖼️", gif:"🖼️", webp:"🖼️", svg:"🖼️",
+      mp4:"🎬", webm:"🎬", mkv:"🎬", avi:"🎬",
+      mp3:"🎵", wav:"🎵", ogg:"🎵",
+      zip:"🗜️", rar:"🗜️", html:"🌐", htm:"🌐"
+    };
+
+    function iconFor(ext) { return EXT_ICON[ext.toLowerCase()] || "📄"; }
+    function cleanTitle(f) { return f.replace(/\.[^/.]+$/, "").replace(/[._-]/g, " ").trim(); }
+    function fileUrl(f) { return "/api/documents/file/" + encodeURIComponent(f); }
+    function escHtml(t) {
+      return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    // --- Thumbnail generators ---
+
+    function makeIconThumb(ext) {
+      const d = document.createElement("div");
+      d.className = "card-thumb";
+      d.innerHTML = `<span class="thumb-icon">${iconFor(ext)}</span>`;
+      return d;
+    }
+
+    function makeImageThumb(filename) {
+      const d = document.createElement("div");
+      d.className = "card-thumb";
+      const img = document.createElement("img");
+      img.src = fileUrl(filename);
+      img.alt = filename;
+      d.appendChild(img);
+      return d;
+    }
+
+    function makeTextThumb(filename) {
+      const d = document.createElement("div");
+      d.className = "card-thumb";
+      const pre = document.createElement("div");
+      pre.className = "text-preview";
+      pre.textContent = "Loading...";
+      fetch(fileUrl(filename))
+        .then(r => r.text())
+        .then(t => { pre.textContent = t.slice(0, 300); })
+        .catch(() => { pre.textContent = filename; });
+      d.appendChild(pre);
+      return d;
+    }
+
+    function makePdfThumb(filename) {
+      const d = document.createElement("div");
+      d.className = "card-thumb";
+      const canvas = document.createElement("canvas");
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+      d.appendChild(canvas);
+
+      fetch(fileUrl(filename))
+        .then(r => r.arrayBuffer())
+        .then(buf => pdfjsLib.getDocument({ data: buf }).promise)
+        .then(pdf => pdf.getPage(1))
+        .then(page => {
+          const vp = page.getViewport({ scale: 0.5 });
+          canvas.width = vp.width;
+          canvas.height = vp.height;
+          return page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+        })
+        .catch(() => {
+          d.innerHTML = `<span class="thumb-icon">📕</span>`;
+        });
+      return d;
+    }
+
+    function makeVideoThumb(filename) {
+      const d = document.createElement("div");
+      d.className = "card-thumb";
+      const video = document.createElement("video");
+      video.src = fileUrl(filename);
+      video.currentTime = 2;
+      video.muted = true;
+      video.playsInline = true;
+      video.className = "video-thumb";
+      video.addEventListener("loadeddata", () => { video.currentTime = 2; });
+      d.appendChild(video);
+      return d;
+    }
+
+    function makeThumbnail(filename) {
+      const ext = filename.split(".").pop().toLowerCase();
+      if (["jpg","jpeg","png","gif","webp","svg"].includes(ext)) return makeImageThumb(filename);
+      if (["txt","md","csv"].includes(ext)) return makeTextThumb(filename);
+      if (ext === "pdf") return makePdfThumb(filename);
+      if (["mp4","webm"].includes(ext)) return makeVideoThumb(filename);
+      return makeIconThumb(ext);
+    }
+
+    // --- Modal ---
+    const modal = document.getElementById("modal");
+    const modalTitle = document.getElementById("modal-title");
+    const modalBody = document.getElementById("modal-body");
+
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+    modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+
+    function closeModal() {
+      modal.classList.remove("open");
+      modalBody.innerHTML = '<div style="padding:40px;text-align:center;color:#888;">Loading...</div>';
+    }
+
+    async function openFile(filename) {
+      const ext = filename.split(".").pop().toLowerCase();
+      const url = fileUrl(filename);
+      modal.classList.add("open");
+      modalTitle.textContent = filename;
+      modalBody.innerHTML = '<div style="padding:40px;text-align:center;color:#888;">Loading...</div>';
+
+      if (ext === "pdf") {
+        modalBody.innerHTML = `<iframe src="${url}"></iframe>`;
+      } else if (["jpg","jpeg","png","gif","webp","svg"].includes(ext)) {
+        modalBody.innerHTML = `<img src="${url}" alt="${filename}">`;
+      } else if (["mp4","webm"].includes(ext)) {
+        modalBody.innerHTML = `<video controls autoplay><source src="${url}"></video>`;
+      } else if (["mp3","wav","ogg"].includes(ext)) {
+        modalBody.innerHTML = `<audio controls autoplay style="margin:40px auto;display:block;"><source src="${url}"></audio>`;
+      } else if (["txt"].includes(ext)) {
+        const res = await fetch(url);
+        const text = await res.text();
+        modalBody.innerHTML = `<pre>${escHtml(text)}</pre>`;
+      } else if (ext === "html" || ext === "htm") {
+        const res = await fetch(url);
+        const text = await res.text();
+        modalBody.innerHTML = `<iframe srcdoc="${text.replace(/"/g,'&quot;')}"></iframe>`;
+      } else if (ext === "md") {
+        const res = await fetch(url);
+        const text = await res.text();
+        const div = document.createElement("div");
+        div.className = "md-body";
+        div.innerHTML = marked.parse(text);
+        modalBody.innerHTML = "";
+        modalBody.appendChild(div);
+      } else if (ext === "csv") {
+        const res = await fetch(url);
+        const text = await res.text();
+        const rows = text.trim().split("\n").map(r => r.split(","));
+        let html = '<div class="csv-table"><table>';
+        rows.forEach((row, i) => {
+          html += "<tr>" + row.map(c =>
+            i === 0 ? `<th>${escHtml(c.trim())}</th>` : `<td>${escHtml(c.trim())}</td>`
+          ).join("") + "</tr>";
+        });
+        html += "</table></div>";
+        modalBody.innerHTML = html;
+      } else if (ext === "docx") {
+        const res = await fetch(url);
+        const buf = await res.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+        const div = document.createElement("div");
+        div.className = "docx-body";
+        div.innerHTML = result.value;
+        modalBody.innerHTML = "";
+        modalBody.appendChild(div);
+      } else if (["xlsx","xls"].includes(ext)) {
+        const res = await fetch(url);
+        const buf = await res.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const html = XLSX.utils.sheet_to_html(ws);
+        const div = document.createElement("div");
+        div.className = "csv-table";
+        div.innerHTML = html;
+        modalBody.innerHTML = "";
+        modalBody.appendChild(div);
+      } else {
+        modalBody.innerHTML = `
+          <div class="no-preview">
+            <div class="icon">${iconFor(ext)}</div>
+            <div>No preview available for .${ext} files</div>
+            <a href="${url}" download="${filename}">⬇ Download File</a>
+          </div>`;
+      }
+    }
+
+    // --- Grid ---
+    function renderGrid(docs) {
+      const grid = document.getElementById("grid");
+      const empty = document.getElementById("empty");
+      grid.innerHTML = "";
+      if (!docs.length) { empty.style.display = "block"; return; }
+      empty.style.display = "none";
+
+      docs.forEach(d => {
+        const ext = d.split(".").pop();
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const thumb = makeThumbnail(d);
+        thumb.addEventListener("click", () => openFile(d));
+
+        const info = document.createElement("div");
+        info.className = "card-info";
+        info.innerHTML = `
+          <div class="card-title">${cleanTitle(d)}</div>
+          <div class="card-ext">${ext}</div>
+          <div class="card-actions">
+            <button class="btn btn-open">Open</button>
+            <a class="btn btn-download" href="${fileUrl(d)}" download="${d}">Download</a>
+          </div>`;
+
+        info.querySelector(".btn-open").addEventListener("click", () => openFile(d));
+
+        card.appendChild(thumb);
+        card.appendChild(info);
+        grid.appendChild(card);
+      });
+    }
+
+    function filterDocs() {
+      const q = document.getElementById("search").value.toLowerCase();
+      renderGrid(allDocs.filter(d => cleanTitle(d).toLowerCase().includes(q)));
+    }
+
+    async function init() {
+      try {
+        const res = await fetch("/api/documents");
+        const data = await res.json();
+        allDocs = data.documents || [];
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("subtitle").textContent =
+          allDocs.length + " document" + (allDocs.length !== 1 ? "s" : "") + " available";
+        renderGrid(allDocs);
+      } catch(err) {
+        document.getElementById("loading").textContent = "Error: " + err;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

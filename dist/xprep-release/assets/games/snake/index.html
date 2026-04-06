@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Snake — xPrep Games</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1a1a1a; color: #e0e0e0; font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+    h1 { font-size: 1.2rem; color: #aaa; margin-bottom: 8px; letter-spacing: 0.1em; }
+    canvas { background: #000; border: 2px solid #333; border-radius: 4px; display: block; max-width: 100%; }
+    .hud { display: flex; gap: 40px; margin-bottom: 12px; font-size: 0.9rem; color: #888; }
+    .hud span { font-weight: bold; color: #e0e0e0; }
+    .controls { margin-top: 14px; font-size: 0.78rem; color: #555; text-align: center; line-height: 1.8; }
+    .controls span { color: #888; }
+    .btn { background: #333; color: #e0e0e0; border: none; border-radius: 8px; padding: 8px 20px; font-size: 0.85rem; cursor: pointer; margin-top: 10px; }
+    .btn:hover { background: #444; }
+    .back { position: fixed; top: 16px; left: 20px; font-size: 0.82rem; color: #555; text-decoration: none; }
+    .back:hover { color: #aaa; }
+    #msg { font-size: 1rem; color: #5EA259; margin-bottom: 8px; height: 24px; }
+    .swipe-btns { display: none; grid-template-columns: repeat(3,60px); grid-template-rows: repeat(3,60px); gap:4px; margin-top:14px; }
+    @media (max-width:600px) { .swipe-btns { display: grid; } }
+    .swipe-btn { background:#2a2a2a; border:1px solid #444; border-radius:8px; color:#888; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .swipe-btn:active { background:#444; }
+  </style>
+</head>
+<body>
+<a href="/games/" class="back">Back to Games</a>
+<h1>SNAKE</h1>
+<div class="hud">Score: <span id="score">0</span> &nbsp;&nbsp; High Score: <span id="hi">0</span></div>
+<div id="msg">Press Space or tap to start</div>
+<canvas id="c" width="420" height="420"></canvas>
+<div class="controls">
+  <span>Move:</span> Arrow Keys or WASD &nbsp;&nbsp; <span>Pause:</span> Space
+</div>
+<div class="swipe-btns">
+  <div></div><div class="swipe-btn" onclick="swipe('up')">↑</div><div></div>
+  <div class="swipe-btn" onclick="swipe('left')">←</div>
+  <div class="swipe-btn" onclick="swipe('down')">↓</div>
+  <div class="swipe-btn" onclick="swipe('right')">→</div>
+</div>
+<button class="btn" onclick="startGame()">New Game</button>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const GRID = 20, COLS = 21, ROWS = 21;
+const W = canvas.width, H = canvas.height;
+const CW = W/COLS, CH = H/ROWS;
+
+let snake, dir, nextDir, food, score, hiScore = 0, running = false, gameOver = false, interval;
+
+function startGame() {
+  snake = [{x:10, y:10},{x:9,y:10},{x:8,y:10}];
+  dir = {x:1, y:0}; nextDir = {x:1, y:0};
+  score = 0;
+  document.getElementById("score").textContent = 0;
+  document.getElementById("msg").textContent = "Press Space or tap to start";
+  gameOver = false; running = false;
+  placeFood();
+  clearInterval(interval);
+  draw();
+}
+
+function placeFood() {
+  do {
+    food = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
+  } while (snake.some(s => s.x===food.x && s.y===food.y));
+}
+
+function step() {
+  if (!running || gameOver) return;
+  dir = nextDir;
+  const head = {x: snake[0].x+dir.x, y: snake[0].y+dir.y};
+  if (head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS||snake.some(s=>s.x===head.x&&s.y===head.y)) {
+    gameOver = true; running = false;
+    if (score > hiScore) { hiScore = score; document.getElementById("hi").textContent = hiScore; }
+    document.getElementById("msg").textContent = "Game Over! Score: "+score+" — Space to restart";
+    clearInterval(interval);
+    return;
+  }
+  snake.unshift(head);
+  if (head.x===food.x && head.y===food.y) {
+    score++;
+    document.getElementById("score").textContent = score;
+    placeFood();
+    // Speed up slightly
+    clearInterval(interval);
+    const spd = Math.max(80, 200 - score*5);
+    interval = setInterval(step, spd);
+  } else { snake.pop(); }
+  draw();
+}
+
+function draw() {
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0,0,W,H);
+  // Grid dots
+  ctx.fillStyle = "#111";
+  for (let x=0;x<COLS;x++) for (let y=0;y<ROWS;y++) {
+    ctx.fillRect(x*CW+CW/2-1, y*CH+CH/2-1, 2, 2);
+  }
+  // Snake
+  snake.forEach((s,i) => {
+    const ratio = 1 - i/snake.length*0.4;
+    ctx.fillStyle = i===0 ? "#5EA259" : `rgba(94,162,89,${ratio})`;
+    ctx.beginPath();
+    ctx.roundRect(s.x*CW+1, s.y*CH+1, CW-2, CH-2, 4);
+    ctx.fill();
+  });
+  // Food
+  ctx.fillStyle = "#e74c3c";
+  ctx.beginPath();
+  ctx.arc(food.x*CW+CW/2, food.y*CH+CH/2, CW/2-2, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function swipe(d) {
+  if (!running && !gameOver) { running=true; document.getElementById("msg").textContent=""; interval=setInterval(step,200); return; }
+  const dirs = {up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
+  const nd = dirs[d];
+  if (nd.x !== -dir.x || nd.y !== -dir.y) nextDir = nd;
+}
+
+document.addEventListener("keydown", e => {
+  const map = {ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},w:{x:0,y:-1},s:{x:0,y:1},a:{x:-1,y:0},d:{x:1,y:0}};
+  if (e.key === " ") {
+    e.preventDefault();
+    if (gameOver) { startGame(); return; }
+    if (!running) {
+      running = true;
+      document.getElementById("msg").textContent = "";
+      interval = setInterval(step, 200);
+    } else {
+      running = false;
+      document.getElementById("msg").textContent = "Paused";
+      clearInterval(interval);
+    }
+    return;
+  }
+  const nd = map[e.key];
+  if (nd && (nd.x !== -dir.x || nd.y !== -dir.y)) {
+    e.preventDefault();
+    nextDir = nd;
+  }
+});
+
+// Touch swipe
+let touchStart = null;
+canvas.addEventListener("touchstart", e => {
+  touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+  if (!running && !gameOver) { running=true; document.getElementById("msg").textContent=""; interval=setInterval(step,200); }
+  e.preventDefault();
+}, {passive:false});
+canvas.addEventListener("touchend", e => {
+  if (!touchStart) return;
+  const dx = e.changedTouches[0].clientX - touchStart.x;
+  const dy = e.changedTouches[0].clientY - touchStart.y;
+  if (Math.abs(dx) > Math.abs(dy)) swipe(dx > 0 ? "right" : "left");
+  else swipe(dy > 0 ? "down" : "up");
+  touchStart = null;
+  e.preventDefault();
+}, {passive:false});
+
+startGame();
+</script>
+</body>
+</html>
