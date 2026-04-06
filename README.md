@@ -33,8 +33,15 @@ xPrep creates an offline WiFi hotspot that serves maps, documents, videos, libra
 
 ## Installation
 
-Download and run the installer on a fresh Raspberry Pi:
+Run the following on a fresh Raspberry Pi:
 
+    # Option 1 - GitHub (recommended)
+    curl -L -O https://github.com/alik2labs/xprep/releases/latest/download/xprep.tar.gz
+    tar -xzf xprep.tar.gz
+    cd xprep-release
+    sudo bash install.sh
+
+    # Option 2 - Mirror
     curl -O https://expatprepper.org/xprep/xprep.tar.gz
     tar -xzf xprep.tar.gz
     cd xprep-release
@@ -45,6 +52,12 @@ Download and run the installer on a fresh Raspberry Pi:
     xprep-installer/
       admin_app.py          Flask admin backend
       admin/                Admin tab modules
+        maps_tab.py         Maps admin routes
+        kiwix_tab.py        Kiwix admin routes
+        videos_tab.py       Videos admin routes
+        documents_tab.py    Documents admin routes
+        settings_tab.py     Settings admin routes
+        status_tab.py       Status API
       assets/               Frontend files served by nginx
         maps/               Map viewer
         documents/          Document viewer
@@ -52,8 +65,9 @@ Download and run the installer on a fresh Raspberry Pi:
         games/              Offline games
         tools/              Field tools
       scripts/              Install and setup scripts
+      kiwix/                Kiwix queue worker and scripts
       install.sh            Main installer
-      build_release.sh      Builds the release tarball
+      build_release.sh      Builds and uploads the release
 
 ## Admin Panel
 
@@ -62,6 +76,12 @@ The admin panel runs on port 8080. Access it at:
     http://55.55.55.55:8080
 
 From here you can manage maps, documents, videos, Kiwix content, and system settings.
+
+## Configuration
+
+Copy config.env.example to config.env and update the values before installing:
+
+    cp config.env.example config.env
 
 ## License
 
