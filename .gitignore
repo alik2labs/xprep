@@ -3,13 +3,20 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.bak
 
 # Dist and build
 dist/
 
-# Environment
+# Environment and config
 *.env
 config.env
+
+# Runtime files
+assets/enabled_sections.json
+
+# Calibre database
+assets/calibre-library/
 
 # Logs
 *.log
@@ -20,4 +27,3 @@ Thumbs.db
 
 # Temp files
 *.tmp
-*.bak
