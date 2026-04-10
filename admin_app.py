@@ -282,8 +282,8 @@ HTML_TEMPLATE = """
 
     {% if active_tab == 'settings' %}
       <div class="panel">
-        <h1 style="margin:0 0 6px;">Settings</h1>
-        <p class="note">Select which sections appear on the public homepage.</p>
+        <h1 style="margin:0 0 6px;">Sections</h1>
+        <p class="note">Select which sections appear on the public homepage. Drag to reorder.</p>
         <form method="post" action="/save">
           <div id="sections-grid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px;">
             {% for key, label, icon, sub, desc, enabled in sections %}
@@ -393,6 +393,42 @@ HTML_TEMPLATE = """
           const enabled = labels.filter(c => c.classList.contains('enabled')).map(c => c.dataset.key);
           document.getElementById('section-order-input').value = order.join(',');
           document.getElementById('section-enabled-input').value = enabled.join(',');
+        }
+        </script>
+      </div>
+
+      <div class="panel">
+        <h2>WiFi Settings</h2>
+        <p class="note">Change the hotspot name, password or IP address. These changes take effect immediately and will disconnect all connected users.</p>
+        <div style="background:#3a1f1f;border:1px solid #6b2e2e;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#f5a0a0;font-size:0.88rem;">
+          &#9888; Changing the WiFi password or name will disconnect everyone currently connected. They will need to reconnect using the new credentials.
+        </div>
+        <form method="post" action="/save-wifi" id="wifiForm" onsubmit="return confirmWifi()">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;"><label style="font-size:12px;color:#888;">WiFi Name (SSID)</label><br>
+              <input type="text" name="wifi_ssid" value="{{ wifi_ssid }}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font-size:13px;margin-top:4px;">
+            </td></tr>
+            <tr><td style="padding:6px 0;"><label style="font-size:12px;color:#888;">WiFi Password (min 8 characters)</label><br>
+              <input type="text" name="wifi_password" value="{{ wifi_password }}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font-size:13px;margin-top:4px;">
+            </td></tr>
+          </table>
+          <button type="submit">Save WiFi Settings</button>
+        </form>
+        <div id="wifi-saving" style="display:none;margin-top:16px;background:#1a3a1a;border:1px solid #2e6b2e;border-radius:10px;padding:14px 16px;color:#90d090;font-size:0.9rem;">
+          <strong>WiFi settings saved.</strong> The hotspot is restarting.<br>
+          <span style="font-size:0.85rem;color:#6aaa6a;">Reconnect to the WiFi network using the new credentials, then reload this page.</span>
+        </div>
+        <script>
+        function confirmWifi() {
+          const ssid = document.querySelector('[name=wifi_ssid]').value.trim();
+          const pwd = document.querySelector('[name=wifi_password]').value.trim();
+          if (pwd.length < 8) { alert('Password must be at least 8 characters.'); return false; }
+          if (!confirm('This will restart the WiFi hotspot and disconnect all users. Continue?')) return false;
+          setTimeout(() => {
+            document.getElementById('wifiForm').style.display = 'none';
+            document.getElementById('wifi-saving').style.display = 'block';
+          }, 100);
+          return true;
         }
         </script>
       </div>
