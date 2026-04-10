@@ -230,6 +230,12 @@ HTML_TEMPLATE = """
     body.dark .dir-entry { border-color:#333; }
     body.dark .dir-entry.region-file { background:#252520; }
     body.dark .loader-box { background:#242424; border-color:#333; }
+    body:not(.dark) .settings-card { background:#f5f5f5 !important; border-color:#e0e0e0 !important; }
+    body:not(.dark) .settings-card .card-label { color:#161616 !important; }
+    body:not(.dark) .settings-card .card-sub-label { color:#888 !important; }
+    body:not(.dark) .settings-card .card-desc-label { color:#aaa !important; }
+    body:not(.dark) .settings-card .card-icon { color:#555 !important; }
+    body:not(.dark) .settings-card.enabled { border-color:#5EA259 !important; background:#f6fbf6 !important; }
 </style>
 </head>
 <body>
@@ -273,15 +279,46 @@ HTML_TEMPLATE = """
 
     {% if active_tab == 'settings' %}
       <div class="panel">
-        <h1>xprep Admin</h1>
-        <p class="note">Select which sections should appear on the public homepage.</p>
+        <h1 style="margin:0 0 6px;">Settings</h1>
+        <p class="note">Select which sections appear on the public homepage.</p>
         <form method="post" action="/save">
-          {% for key, label, enabled in sections %}
-            <div style="padding:10px 0;border-bottom:1px solid #eee;">
-              <label><input type="checkbox" name="{{ key }}" {% if enabled %}checked{% endif %}> {{ label }}</label>
-            </div>
-          {% endfor %}
-          <button type="submit">Save Changes</button>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px;">
+            {% for key, label, icon, sub, desc, enabled in sections %}
+            <label onclick="toggleCard(this)" class="settings-card {% if enabled %}enabled{% endif %}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 16px;border-radius:14px;cursor:pointer;background:#242424;border:1px solid {% if enabled %}#5EA259{% else %}#333{% endif %};text-align:center;transition:all 0.2s;opacity:{% if enabled %}1{% else %}0.5{% endif %};">
+              <input type="checkbox" name="{{ key }}" {% if enabled %}checked{% endif %} style="display:none;">
+              <div style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:{% if enabled %}#5EA259{% else %}transparent{% endif %};display:flex;align-items:center;justify-content:center;border:1.5px solid {% if enabled %}#5EA259{% else %}#555{% endif %};" class="check-dot">
+                {% if enabled %}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>{% endif %}
+              </div>
+              <div class="card-icon" style="color:#aaa;margin-bottom:4px;">{{ icon | safe }}</div>
+              <div class="card-label" style="font-weight:bold;font-size:13px;color:#e0e0e0;">{{ label }}</div>
+              <div class="card-sub-label" style="font-size:10px;color:#888;">{{ sub }}</div>
+              <div class="card-desc-label" style="font-size:9px;color:#666;line-height:1.4;">{{ desc }}</div>
+            </label>
+            {% endfor %}
+          </div>
+          <script>
+          function toggleCard(label) {
+            const cb = label.querySelector('input[type=checkbox]');
+            cb.checked = !cb.checked;
+            const dot = label.querySelector('.check-dot');
+            if (cb.checked) {
+              label.classList.add('enabled');
+              label.style.borderColor = '#5EA259';
+              label.style.opacity = '1';
+              dot.style.background = '#5EA259';
+              dot.style.borderColor = '#5EA259';
+              dot.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            } else {
+              label.classList.remove('enabled');
+              label.style.borderColor = document.body.classList.contains('dark') ? '#333' : '#e0e0e0';
+              label.style.opacity = '0.5';
+              dot.style.background = 'transparent';
+              dot.style.borderColor = document.body.classList.contains('dark') ? '#555' : '#ccc';
+              dot.innerHTML = '';
+            }
+          }
+          </script>
+          <button type="submit" style="margin-top:20px;">Save Changes</button>
         </form>
       </div>
 
@@ -1074,6 +1111,12 @@ HTML_TEMPLATE = """
     body.dark #theme-toggle { background:#242424; border-color:#444; }
     body.dark header { background:#242424; border-color:#333; }
     body.dark .loader-box { background:#242424; border-color:#333; }
+    body:not(.dark) .settings-card { background:#f5f5f5 !important; border-color:#e0e0e0 !important; }
+    body:not(.dark) .settings-card .card-label { color:#161616 !important; }
+    body:not(.dark) .settings-card .card-sub-label { color:#888 !important; }
+    body:not(.dark) .settings-card .card-desc-label { color:#aaa !important; }
+    body:not(.dark) .settings-card .card-icon { color:#555 !important; }
+    body:not(.dark) .settings-card.enabled { border-color:#5EA259 !important; background:#f6fbf6 !important; }
   </style>
 
   <script>

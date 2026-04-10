@@ -127,6 +127,9 @@ if config.get("calibre"):
     cards.append(make_card(None, "calibre", "eBooks", "Calibre Library", "Browse and read your offline eBook collection.", calibre_onclick))
 
 
+if config.get("tools"):
+    cards.append('''<a class="card" href="/tools/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><path d="M30 10l-4 4-6-6 4-4a8 8 0 016 6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M20 14L8 26a2 2 0 000 3l3 3a2 2 0 003 0l12-12" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><div class="card-title">Tools</div><div class="card-sub">Field Utilities</div><div class="card-desc">Offline calculators, converters and reference tools.</div></a>''')
+
 if config.get("prayer"):
     cards.append('''<a class="card" href="/prayer/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><path d="M20 4C20 4 8 12 8 22a12 12 0 0024 0C32 12 20 4 20 4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M20 16v8M16 20h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><div class="card-title">Prayer</div><div class="card-sub">Times & Qibla</div><div class="card-desc">Offline prayer times, Qibla direction and Hijri calendar.</div></a>''')
 
