@@ -236,6 +236,9 @@ HTML_TEMPLATE = """
     body:not(.dark) .settings-card .card-desc-label { color:#aaa !important; }
     body:not(.dark) .settings-card .card-icon { color:#555 !important; }
     body:not(.dark) .settings-card.enabled { border-color:#5EA259 !important; background:#f6fbf6 !important; }
+    .settings-card.drag-over { border-color:#5EA259 !important; transform:scale(1.03); }
+    .settings-card { cursor:default !important; }
+    .drag-handle:hover { color:#5EA259 !important; }
 </style>
 </head>
 <body>
@@ -282,12 +285,15 @@ HTML_TEMPLATE = """
         <h1 style="margin:0 0 6px;">Settings</h1>
         <p class="note">Select which sections appear on the public homepage.</p>
         <form method="post" action="/save">
-          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px;">
+          <div id="sections-grid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px;">
             {% for key, label, icon, sub, desc, enabled in sections %}
-            <label onclick="toggleCard(this)" class="settings-card {% if enabled %}enabled{% endif %}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 16px;border-radius:14px;cursor:pointer;background:#242424;border:1px solid {% if enabled %}#5EA259{% else %}#333{% endif %};text-align:center;transition:all 0.2s;opacity:{% if enabled %}1{% else %}0.5{% endif %};">
-              <input type="checkbox" name="{{ key }}" {% if enabled %}checked{% endif %} style="display:none;">
-              <div style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:{% if enabled %}#5EA259{% else %}transparent{% endif %};display:flex;align-items:center;justify-content:center;border:1.5px solid {% if enabled %}#5EA259{% else %}#555{% endif %};" class="check-dot">
+            <label class="settings-card {% if enabled %}enabled{% endif %}" data-key="{{ key }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 16px;border-radius:14px;cursor:default;background:#242424;border:1px solid {% if enabled %}#5EA259{% else %}#333{% endif %};text-align:center;transition:all 0.2s;opacity:{% if enabled %}1{% else %}0.5{% endif %};">
+              <input type="checkbox" name="{{ key }}" {% if enabled %}checked{% endif %} class="section-cb" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
+              <div onclick="toggleCard(this.closest('label'))" style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:{% if enabled %}#5EA259{% else %}transparent{% endif %};display:flex;align-items:center;justify-content:center;border:1.5px solid {% if enabled %}#5EA259{% else %}#555{% endif %};cursor:pointer;" class="check-dot">
                 {% if enabled %}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>{% endif %}
+              </div>
+              <div class="drag-handle" style="position:absolute;top:10px;left:10px;color:#555;cursor:grab;padding:2px;" draggable="false">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><circle cx="3" cy="2" r="1.2"/><circle cx="9" cy="2" r="1.2"/><circle cx="3" cy="6" r="1.2"/><circle cx="9" cy="6" r="1.2"/><circle cx="3" cy="10" r="1.2"/><circle cx="9" cy="10" r="1.2"/></svg>
               </div>
               <div class="card-icon" style="color:#aaa;margin-bottom:4px;">{{ icon | safe }}</div>
               <div class="card-label" style="font-weight:bold;font-size:13px;color:#e0e0e0;">{{ label }}</div>
@@ -299,9 +305,11 @@ HTML_TEMPLATE = """
           <script>
           function toggleCard(label) {
             const cb = label.querySelector('input[type=checkbox]');
-            cb.checked = !cb.checked;
             const dot = label.querySelector('.check-dot');
-            if (cb.checked) {
+            const enable = !label.classList.contains('enabled');
+            cb.checked = enable;
+            if (enable) { cb.setAttribute('checked', 'checked'); } else { cb.removeAttribute('checked'); }
+            if (enable) {
               label.classList.add('enabled');
               label.style.borderColor = '#5EA259';
               label.style.opacity = '1';
@@ -318,8 +326,75 @@ HTML_TEMPLATE = """
             }
           }
           </script>
-          <button type="submit" style="margin-top:20px;">Save Changes</button>
+          <input type="hidden" name="section_order" id="section-order-input">
+          <input type="hidden" name="section_enabled" id="section-enabled-input">
+          <button type="submit" style="margin-top:20px;" onclick="saveOrder()">Save Changes</button>
         </form>
+        <script>
+        const grid = document.getElementById('sections-grid');
+        let dragSrc = null;
+
+        grid.querySelectorAll('label').forEach(card => {
+          card.setAttribute('draggable', 'false');
+
+          card.querySelector('.drag-handle').addEventListener('mousedown', function() {
+            card.setAttribute('draggable', 'true');
+          });
+          card.querySelector('.drag-handle').addEventListener('mouseup', function() {
+            card.setAttribute('draggable', 'false');
+          });
+
+          card.addEventListener('dragstart', function(e) {
+            if (card.getAttribute('draggable') !== 'true') { e.preventDefault(); return; }
+            dragSrc = this;
+            this.style.opacity = '0.4';
+            e.dataTransfer.effectAllowed = 'move';
+          });
+
+          card.addEventListener('dragend', function() {
+            this.style.opacity = this.classList.contains('enabled') ? '1' : '0.5';
+            grid.querySelectorAll('label').forEach(c => c.classList.remove('drag-over'));
+          });
+
+          card.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+          });
+
+          card.addEventListener('dragenter', function() {
+            this.classList.add('drag-over');
+          });
+
+          card.addEventListener('dragleave', function() {
+            this.classList.remove('drag-over');
+          });
+
+          card.addEventListener('drop', function(e) {
+            e.stopPropagation();
+            if (dragSrc !== this) {
+              const cards = [...grid.querySelectorAll('label')];
+              const srcIdx = cards.indexOf(dragSrc);
+              const dstIdx = cards.indexOf(this);
+              if (srcIdx < dstIdx) {
+                grid.insertBefore(dragSrc, this.nextSibling);
+              } else {
+                grid.insertBefore(dragSrc, this);
+              }
+            }
+            this.classList.remove('drag-over');
+            return false;
+          });
+        });
+
+        function saveOrder() {
+          const labels = [...grid.querySelectorAll('label')];
+          const order = labels.map(c => c.dataset.key);
+          const enabled = labels.filter(c => c.classList.contains('enabled')).map(c => c.dataset.key);
+          document.getElementById('section-order-input').value = order.join(',');
+          document.getElementById('section-enabled-input').value = enabled.join(',');
+        }
+        </script>
       </div>
 
       <div class="panel">
@@ -1117,6 +1192,9 @@ HTML_TEMPLATE = """
     body:not(.dark) .settings-card .card-desc-label { color:#aaa !important; }
     body:not(.dark) .settings-card .card-icon { color:#555 !important; }
     body:not(.dark) .settings-card.enabled { border-color:#5EA259 !important; background:#f6fbf6 !important; }
+    .settings-card.drag-over { border-color:#5EA259 !important; transform:scale(1.03); }
+    .settings-card { cursor:default !important; }
+    .drag-handle:hover { color:#5EA259 !important; }
   </style>
 
   <script>
