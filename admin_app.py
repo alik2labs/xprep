@@ -273,12 +273,121 @@ HTML_TEMPLATE = """
     </header>
 
     <div class="tabs">
+      <a class="tab {% if active_tab == 'status' %}active{% endif %}" href="/?tab=status">Status</a>
       <a class="tab {% if active_tab == 'settings' %}active{% endif %}" href="/?tab=settings">Settings</a>
       <a class="tab {% if active_tab == 'maps' %}active{% endif %}" href="/?tab=maps">Maps</a>
       <a class="tab {% if active_tab == 'kiwix' %}active{% endif %}" href="/?tab=kiwix">Kiwix</a>
       <a class="tab {% if active_tab == 'videos' %}active{% endif %}" href="/?tab=videos">Videos</a>
       <a class="tab {% if active_tab == 'documents' %}active{% endif %}" href="/?tab=documents">Documents</a>
     </div>
+
+    {% if active_tab == 'status' %}
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 style="margin:0;">System Status</h2>
+            <p class="note" style="margin:4px 0 0;">Live overview of your xPrep device.</p>
+          </div>
+          <button class="secondary" style="margin-top:0;" onclick="loadStatus()">Refresh</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+
+        <div class="panel">
+          <h3 style="margin:0 0 16px;">Device</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;width:140px;">Hostname</td><td style="padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;" id="d-hostname">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Version</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-version">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Uptime</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-uptime">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;">WiFi Name</td><td style="padding:8px 0;" id="d-ssid">—</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin:0 0 16px;">Network</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;width:140px;">Hotspot IP</td><td style="padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;" id="d-hotspot-ip">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Network IP</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-network-ip">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;">Connected Users</td><td style="padding:8px 0;" id="d-users">—</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin:0 0 16px;">Storage</h3>
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#888;margin-bottom:8px;">
+            <span id="d-storage-used">—</span>
+            <span id="d-storage-free">—</span>
+          </div>
+          <div style="background:#eee;border-radius:999px;height:12px;overflow:hidden;">
+            <div id="d-storage-bar" style="height:12px;background:#5EA259;border-radius:999px;width:0%;transition:width 0.5s;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:#aaa;margin-top:6px;">
+            <span>Used</span>
+            <span id="d-storage-total">—</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin-top:16px;">
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;width:140px;">Maps Installed</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-maps-count">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;">Maps Size</td><td style="padding:8px 0;" id="d-maps-size">—</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin:0 0 16px;">Services</h3>
+          <div id="d-services">
+            <div style="color:#888;font-size:0.9rem;">Loading...</div>
+          </div>
+        </div>
+
+      </div>
+
+      <script>
+        function loadStatus() {
+          fetch("/api/status?t=" + Date.now())
+            .then(r => r.json())
+            .then(d => {
+              document.getElementById("d-hostname").textContent = d.hostname || "—";
+              document.getElementById("d-version").textContent = d.version ? "v" + d.version : "—";
+              document.getElementById("d-uptime").textContent = d.uptime || "—";
+              document.getElementById("d-ssid").textContent = d.wifi_ssid || "—";
+
+              const hotspot = (d.ips || []).find(ip => ip.startsWith("55.55.55.")) || "—";
+              const network = (d.ips || []).find(ip => !ip.startsWith("55.55.55.")) || "—";
+              document.getElementById("d-hotspot-ip").textContent = hotspot;
+              document.getElementById("d-network-ip").textContent = network;
+              document.getElementById("d-users").textContent = (d.connected_users !== undefined) ? d.connected_users + " user" + (d.connected_users !== 1 ? "s" : "") : "—";
+
+              if (d.storage) {
+                document.getElementById("d-storage-used").textContent = d.storage.used_gb + " GB used";
+                document.getElementById("d-storage-free").textContent = d.storage.free_gb + " GB free";
+                document.getElementById("d-storage-total").textContent = d.storage.total_gb + " GB total";
+                const pct = d.storage.percent_used || 0;
+                const bar = document.getElementById("d-storage-bar");
+                bar.style.width = pct + "%";
+                bar.style.background = pct > 85 ? "#8b1e1e" : pct > 60 ? "#c47a00" : "#5EA259";
+              }
+
+              if (d.maps) {
+                document.getElementById("d-maps-count").textContent = d.maps.count + " file" + (d.maps.count !== 1 ? "s" : "");
+                document.getElementById("d-maps-size").textContent = d.maps.size_gb + " GB";
+              }
+
+              if (d.services) {
+                const el = document.getElementById("d-services");
+                el.innerHTML = Object.entries(d.services).map(([name, running]) =>
+                  '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee;font-size:0.9rem;">' +
+                  '<div style="width:10px;height:10px;border-radius:50%;background:' + (running ? '#5EA259' : '#8b1e1e') + ';flex-shrink:0;"></div>' +
+                  '<span style="flex:1;">' + name + '</span>' +
+                  '<span style="color:' + (running ? '#5EA259' : '#8b1e1e') + ';font-size:0.82rem;font-weight:bold;">' + (running ? 'Running' : 'Stopped') + '</span>' +
+                  '</div>'
+                ).join("").replace(/border-bottom:1px solid #eee;">$/, 'border-bottom:none;">');
+              }
+            });
+        }
+        loadStatus();
+        setInterval(loadStatus, 15000);
+      </script>
+    {% endif %}
 
     {% if active_tab == 'settings' %}
       <div class="panel">
@@ -1351,7 +1460,7 @@ def expat_update():
 @app.route("/")
 def index():
     active_tab = request.args.get("tab", "settings")
-    if active_tab not in ["settings", "maps", "kiwix", "videos", "documents"]:
+    if active_tab not in ["settings", "maps", "kiwix", "videos", "documents", "status"]:
         active_tab = "settings"
 
     context = {"active_tab": active_tab}
