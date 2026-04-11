@@ -64,6 +64,55 @@ api_maps = """    location /api/maps {
         add_header Access-Control-Allow-Origin *;
     }
 
+    location /api/maps/list {
+        proxy_pass http://127.0.0.1:8080/api/maps/list;
+        proxy_set_header Host $host;
+        add_header Access-Control-Allow-Origin *;
+    }
+
+    location /api/maps/info {
+        proxy_pass http://127.0.0.1:8080/api/maps/info;
+        proxy_set_header Host $host;
+        add_header Access-Control-Allow-Origin *;
+    }
+
+    location /api/maps/download-status {
+        proxy_pass http://127.0.0.1:8080/api/maps/download-status;
+        proxy_set_header Host $host;
+    }
+
+    location /api/maps/directory {
+        proxy_pass http://127.0.0.1:8080/api/maps/directory;
+        proxy_set_header Host $host;
+    }
+
+    location /api/maps/directory-update {
+        proxy_pass http://127.0.0.1:8080/api/maps/directory-update;
+        proxy_set_header Host $host;
+        proxy_read_timeout 60;
+    }
+
+    location /api/maps/directory-download {
+        proxy_pass http://127.0.0.1:8080/api/maps/directory-download;
+        proxy_set_header Host $host;
+        proxy_read_timeout 7200;
+    }
+
+    location /delete-map-selected {
+        proxy_pass http://127.0.0.1:8080/delete-map-selected;
+        proxy_set_header Host $host;
+    }
+
+    location /save-wifi {
+        proxy_pass http://127.0.0.1:8080/save-wifi;
+        proxy_set_header Host $host;
+    }
+
+    location /fonts/ {
+        proxy_pass http://127.0.0.1:8080/fonts/;
+        proxy_set_header Host $host;
+    }
+
 """
 maps_loc = """    location /maps/ {
         try_files $uri $uri/ =404;
