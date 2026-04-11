@@ -1393,6 +1393,43 @@ HTML_TEMPLATE = """
     if (savedTheme === "dark") { document.body.classList.add("dark"); setIcons(true); }
     else { setIcons(false); }
   </script>
+  <div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:99999;background:#151515;color:white;padding:12px 20px;border-radius:10px;font-size:0.9rem;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:flex;align-items:center;gap:10px;transition:opacity 0.3s;">
+    <span id="toast-icon" style="font-size:1.1rem;">✓</span>
+    <span id="toast-msg"></span>
+  </div>
+  <script>
+    function showToast(msg, type) {
+      const t = document.getElementById("toast");
+      const m = document.getElementById("toast-msg");
+      const i = document.getElementById("toast-icon");
+      m.textContent = msg;
+      if (type === "error") {
+        t.style.background = "#8b1e1e";
+        i.textContent = "✕";
+      } else {
+        t.style.background = "#151515";
+        i.textContent = "✓";
+      }
+      t.style.display = "flex";
+      t.style.opacity = "1";
+      setTimeout(() => {
+        t.style.opacity = "0";
+        setTimeout(() => { t.style.display = "none"; }, 300);
+      }, 3000);
+    }
+    // Check for msg in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const msg = urlParams.get("msg");
+    const msgType = urlParams.get("msgtype") || "success";
+    if (msg) {
+      setTimeout(() => showToast(decodeURIComponent(msg), msgType), 300);
+      // Clean URL
+      const url = new URL(window.location);
+      url.searchParams.delete("msg");
+      url.searchParams.delete("msgtype");
+      window.history.replaceState({}, "", url);
+    }
+  </script>
 </body>
 </html>
 """

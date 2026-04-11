@@ -191,7 +191,7 @@ def register_maps_routes(app):
             filename += ".pmtiles"
         MAPS_DIR.mkdir(parents=True, exist_ok=True)
         f.save(str(MAPS_DIR / filename))
-        return redirect("/?tab=maps")
+        return redirect("/?tab=maps&msg=Map+uploaded+successfully")
 
     @app.route("/delete-map", methods=["POST"])
     def delete_map():
@@ -201,7 +201,7 @@ def register_maps_routes(app):
         fpath = MAPS_DIR / filename
         if fpath.exists() and fpath.suffix == ".pmtiles":
             fpath.unlink()
-        return redirect("/?tab=maps")
+        return redirect("/?tab=maps&msg=Map+deleted")
 
     @app.route("/delete-map-selected", methods=["POST"])
     def delete_map_selected():
@@ -212,7 +212,7 @@ def register_maps_routes(app):
             fpath = MAPS_DIR / filename
             if fpath.exists() and fpath.suffix == ".pmtiles":
                 fpath.unlink()
-        return redirect("/?tab=maps")
+        return redirect("/?tab=maps&msg=Map+deleted")
 
     @app.route("/download-map", methods=["POST"])
     def download_map():

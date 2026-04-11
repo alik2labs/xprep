@@ -52,7 +52,7 @@ def register_settings_routes(app):
             new_config["order"] = [k.strip() for k in order_str.split(",") if k.strip()]
         save_config(new_config)
         subprocess.run(["bash", str(SETUP_SCRIPT)], check=True)
-        return redirect("/?tab=settings")
+        return redirect("/?tab=settings&msg=Sections+saved+successfully")
 
     @app.route("/save-wifi", methods=["POST"])
     def save_wifi():
@@ -98,7 +98,7 @@ rsn_pairwise=CCMP
             subprocess.run(["systemctl", "restart", "hostapd"], check=False)
         threading.Thread(target=restart_hostapd, daemon=True).start()
 
-        return redirect("/?tab=settings")
+        return redirect("/?tab=settings&msg=USB+mounted+successfully")
 
     @app.route("/mount-usb", methods=["POST"])
     def mount_usb():

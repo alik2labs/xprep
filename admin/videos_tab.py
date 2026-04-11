@@ -51,7 +51,7 @@ def register_videos_routes(app):
             path = VIDEOS_DIR / name
             if path.exists() and path.suffix.lower() in ALLOWED_EXTENSIONS:
                 path.unlink()
-        return redirect("/?tab=videos")
+        return redirect("/?tab=videos&msg=Videos+deleted")
 
 def register_videos_upload(app):
     @app.route("/upload-video", methods=["POST"])
@@ -67,4 +67,4 @@ def register_videos_upload(app):
         VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
         save_path = VIDEOS_DIR / file.filename
         file.save(str(save_path))
-        return redirect("/?tab=videos")
+        return redirect("/?tab=videos&msg=Video+uploaded+successfully")
