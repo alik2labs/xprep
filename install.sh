@@ -27,6 +27,7 @@ cd "$ROOT_DIR"
 
 log "Starting xprep Phase 1 installer"
 log "Version: $VERSION"
+echo "$VERSION" > /opt/xprep/version.txt
 log "SSID: $WIFI_SSID"
 log "Offline IP: $PORTAL_IP"
 

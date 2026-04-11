@@ -216,6 +216,7 @@ HTML_TEMPLATE = """
     .qi-state.done{color:#0a7a2f;font-weight:bold;}
     .qi-state.error{color:#8b1e1e;font-weight:bold;}
     .qi-state.active{color:#111;}
+    .svc-row:last-child{border-bottom:none !important;}
     body.dark .panel { background:#242424; border-color:#333; }
     body.dark .tab { background:#2a2a2a; color:#ccc; }
     body.dark .tab.active { background:#e0e0e0; color:#111; }
@@ -230,6 +231,15 @@ HTML_TEMPLATE = """
     body.dark .dir-entry { border-color:#333; }
     body.dark .dir-entry.region-file { background:#252520; }
     body.dark .loader-box { background:#242424; border-color:#333; }
+    body:not(.dark) .settings-card { background:#f5f5f5 !important; border-color:#e0e0e0 !important; }
+    body:not(.dark) .settings-card .card-label { color:#161616 !important; }
+    body:not(.dark) .settings-card .card-sub-label { color:#888 !important; }
+    body:not(.dark) .settings-card .card-desc-label { color:#aaa !important; }
+    body:not(.dark) .settings-card .card-icon { color:#555 !important; }
+    body:not(.dark) .settings-card.enabled { border-color:#5EA259 !important; background:#f6fbf6 !important; }
+    .settings-card.drag-over { border-color:#5EA259 !important; transform:scale(1.03); }
+    .settings-card { cursor:default !important; }
+    .drag-handle:hover { color:#5EA259 !important; }
 </style>
 </head>
 <body>
@@ -264,6 +274,7 @@ HTML_TEMPLATE = """
     </header>
 
     <div class="tabs">
+      <a class="tab {% if active_tab == 'status' %}active{% endif %}" href="/?tab=status">Status</a>
       <a class="tab {% if active_tab == 'settings' %}active{% endif %}" href="/?tab=settings">Settings</a>
       <a class="tab {% if active_tab == 'maps' %}active{% endif %}" href="/?tab=maps">Maps</a>
       <a class="tab {% if active_tab == 'kiwix' %}active{% endif %}" href="/?tab=kiwix">Kiwix</a>
@@ -271,18 +282,265 @@ HTML_TEMPLATE = """
       <a class="tab {% if active_tab == 'documents' %}active{% endif %}" href="/?tab=documents">Documents</a>
     </div>
 
+    {% if active_tab == 'status' %}
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 style="margin:0;">System Status</h2>
+            <p class="note" style="margin:4px 0 0;">Live overview of your xPrep device.</p>
+          </div>
+          <button class="secondary" style="margin-top:0;" onclick="loadStatus()">Refresh</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+
+        <div class="panel">
+          <h3 style="margin:0 0 16px;">Device</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;width:140px;">Hostname</td><td style="padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;" id="d-hostname">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Version</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-version">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Uptime</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-uptime">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;">WiFi Name</td><td style="padding:8px 0;" id="d-ssid">—</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin:0 0 16px;">Network</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;width:140px;">Hotspot IP</td><td style="padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;" id="d-hotspot-ip">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Network IP</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-network-ip">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;">Connected Users</td><td style="padding:8px 0;" id="d-users">—</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin:0 0 16px;">Storage</h3>
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#888;margin-bottom:8px;">
+            <span id="d-storage-used">—</span>
+            <span id="d-storage-free">—</span>
+          </div>
+          <div style="background:#eee;border-radius:999px;height:12px;overflow:hidden;">
+            <div id="d-storage-bar" style="height:12px;background:#5EA259;border-radius:999px;width:0%;transition:width 0.5s;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:#aaa;margin-top:6px;">
+            <span>Used</span>
+            <span id="d-storage-total">—</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin-top:16px;">
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;width:140px;">Maps Installed</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-maps-count">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;">Maps Size</td><td style="padding:8px 0;" id="d-maps-size">—</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin:0 0 16px;">Services</h3>
+          <div id="d-services">
+            <div style="color:#888;font-size:0.9rem;">Loading...</div>
+          </div>
+        </div>
+
+      </div>
+
+      <script>
+        function loadStatus() {
+          fetch("/api/status?t=" + Date.now())
+            .then(r => r.json())
+            .then(d => {
+              document.getElementById("d-hostname").textContent = d.hostname || "—";
+              document.getElementById("d-version").textContent = d.version ? "v" + d.version : "—";
+              document.getElementById("d-uptime").textContent = d.uptime || "—";
+              document.getElementById("d-ssid").textContent = d.wifi_ssid || "—";
+
+              const hotspot = (d.ips || []).find(ip => ip.startsWith("55.55.55.")) || "—";
+              const network = (d.ips || []).find(ip => !ip.startsWith("55.55.55.")) || "—";
+              document.getElementById("d-hotspot-ip").textContent = hotspot;
+              document.getElementById("d-network-ip").textContent = network;
+              document.getElementById("d-users").textContent = (d.connected_users !== undefined) ? d.connected_users + " user" + (d.connected_users !== 1 ? "s" : "") : "—";
+
+              if (d.storage) {
+                document.getElementById("d-storage-used").textContent = d.storage.used_gb + " GB used";
+                document.getElementById("d-storage-free").textContent = d.storage.free_gb + " GB free";
+                document.getElementById("d-storage-total").textContent = d.storage.total_gb + " GB total";
+                const pct = d.storage.percent_used || 0;
+                const bar = document.getElementById("d-storage-bar");
+                bar.style.width = pct + "%";
+                bar.style.background = pct > 85 ? "#8b1e1e" : pct > 60 ? "#c47a00" : "#5EA259";
+              }
+
+              if (d.maps) {
+                document.getElementById("d-maps-count").textContent = d.maps.count + " file" + (d.maps.count !== 1 ? "s" : "");
+                document.getElementById("d-maps-size").textContent = d.maps.size_gb + " GB";
+              }
+
+              if (d.services) {
+                const el = document.getElementById("d-services");
+                el.innerHTML = Object.entries(d.services).map(([name, running]) =>
+                  '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee;font-size:0.9rem;" class="svc-row">' +
+                  '<div style="width:10px;height:10px;border-radius:50%;background:' + (running ? '#5EA259' : '#8b1e1e') + ';flex-shrink:0;"></div>' +
+                  '<span style="flex:1;">' + name + '</span>' +
+                  '<span style="color:' + (running ? '#5EA259' : '#8b1e1e') + ';font-size:0.82rem;font-weight:bold;">' + (running ? 'Running' : 'Stopped') + '</span>' +
+                  '</div>'
+                ).join("");
+              }
+            });
+        }
+        loadStatus();
+        setInterval(loadStatus, 15000);
+      </script>
+    {% endif %}
+
     {% if active_tab == 'settings' %}
       <div class="panel">
-        <h1>xprep Admin</h1>
-        <p class="note">Select which sections should appear on the public homepage.</p>
+        <h1 style="margin:0 0 6px;">Sections</h1>
+        <p class="note">Select which sections appear on the public homepage. Drag to reorder.</p>
         <form method="post" action="/save">
-          {% for key, label, enabled in sections %}
-            <div style="padding:10px 0;border-bottom:1px solid #eee;">
-              <label><input type="checkbox" name="{{ key }}" {% if enabled %}checked{% endif %}> {{ label }}</label>
-            </div>
-          {% endfor %}
-          <button type="submit">Save Changes</button>
+          <div id="sections-grid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px;">
+            {% for key, label, icon, sub, desc, enabled in sections %}
+            <label class="settings-card {% if enabled %}enabled{% endif %}" data-key="{{ key }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 16px;border-radius:14px;cursor:default;background:#242424;border:1px solid {% if enabled %}#5EA259{% else %}#333{% endif %};text-align:center;transition:all 0.2s;opacity:{% if enabled %}1{% else %}0.5{% endif %};">
+              <input type="checkbox" name="{{ key }}" {% if enabled %}checked{% endif %} class="section-cb" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
+              <div onclick="toggleCard(this.closest('label'))" style="position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:{% if enabled %}#5EA259{% else %}transparent{% endif %};display:flex;align-items:center;justify-content:center;border:1.5px solid {% if enabled %}#5EA259{% else %}#555{% endif %};cursor:pointer;" class="check-dot">
+                {% if enabled %}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>{% endif %}
+              </div>
+              <div class="drag-handle" style="position:absolute;top:10px;left:10px;color:#555;cursor:grab;padding:2px;" draggable="false">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><circle cx="3" cy="2" r="1.2"/><circle cx="9" cy="2" r="1.2"/><circle cx="3" cy="6" r="1.2"/><circle cx="9" cy="6" r="1.2"/><circle cx="3" cy="10" r="1.2"/><circle cx="9" cy="10" r="1.2"/></svg>
+              </div>
+              <div class="card-icon" style="color:#aaa;margin-bottom:4px;">{{ icon | safe }}</div>
+              <div class="card-label" style="font-weight:bold;font-size:13px;color:#e0e0e0;">{{ label }}</div>
+              <div class="card-sub-label" style="font-size:10px;color:#888;">{{ sub }}</div>
+              <div class="card-desc-label" style="font-size:9px;color:#666;line-height:1.4;">{{ desc }}</div>
+            </label>
+            {% endfor %}
+          </div>
+          <script>
+          function toggleCard(label) {
+            const cb = label.querySelector('input[type=checkbox]');
+            const dot = label.querySelector('.check-dot');
+            const enable = !label.classList.contains('enabled');
+            cb.checked = enable;
+            if (enable) { cb.setAttribute('checked', 'checked'); } else { cb.removeAttribute('checked'); }
+            if (enable) {
+              label.classList.add('enabled');
+              label.style.borderColor = '#5EA259';
+              label.style.opacity = '1';
+              dot.style.background = '#5EA259';
+              dot.style.borderColor = '#5EA259';
+              dot.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            } else {
+              label.classList.remove('enabled');
+              label.style.borderColor = document.body.classList.contains('dark') ? '#333' : '#e0e0e0';
+              label.style.opacity = '0.5';
+              dot.style.background = 'transparent';
+              dot.style.borderColor = document.body.classList.contains('dark') ? '#555' : '#ccc';
+              dot.innerHTML = '';
+            }
+          }
+          </script>
+          <input type="hidden" name="section_order" id="section-order-input">
+          <input type="hidden" name="section_enabled" id="section-enabled-input">
+          <button type="submit" style="margin-top:20px;" onclick="saveOrder()">Save Changes</button>
         </form>
+        <script>
+        const grid = document.getElementById('sections-grid');
+        let dragSrc = null;
+
+        grid.querySelectorAll('label').forEach(card => {
+          card.setAttribute('draggable', 'false');
+
+          card.querySelector('.drag-handle').addEventListener('mousedown', function() {
+            card.setAttribute('draggable', 'true');
+          });
+          card.querySelector('.drag-handle').addEventListener('mouseup', function() {
+            card.setAttribute('draggable', 'false');
+          });
+
+          card.addEventListener('dragstart', function(e) {
+            if (card.getAttribute('draggable') !== 'true') { e.preventDefault(); return; }
+            dragSrc = this;
+            this.style.opacity = '0.4';
+            e.dataTransfer.effectAllowed = 'move';
+          });
+
+          card.addEventListener('dragend', function() {
+            this.style.opacity = this.classList.contains('enabled') ? '1' : '0.5';
+            grid.querySelectorAll('label').forEach(c => c.classList.remove('drag-over'));
+          });
+
+          card.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+          });
+
+          card.addEventListener('dragenter', function() {
+            this.classList.add('drag-over');
+          });
+
+          card.addEventListener('dragleave', function() {
+            this.classList.remove('drag-over');
+          });
+
+          card.addEventListener('drop', function(e) {
+            e.stopPropagation();
+            if (dragSrc !== this) {
+              const cards = [...grid.querySelectorAll('label')];
+              const srcIdx = cards.indexOf(dragSrc);
+              const dstIdx = cards.indexOf(this);
+              if (srcIdx < dstIdx) {
+                grid.insertBefore(dragSrc, this.nextSibling);
+              } else {
+                grid.insertBefore(dragSrc, this);
+              }
+            }
+            this.classList.remove('drag-over');
+            return false;
+          });
+        });
+
+        function saveOrder() {
+          const labels = [...grid.querySelectorAll('label')];
+          const order = labels.map(c => c.dataset.key);
+          const enabled = labels.filter(c => c.classList.contains('enabled')).map(c => c.dataset.key);
+          document.getElementById('section-order-input').value = order.join(',');
+          document.getElementById('section-enabled-input').value = enabled.join(',');
+        }
+        </script>
+      </div>
+
+      <div class="panel">
+        <h2>WiFi Settings</h2>
+        <p class="note">Change the hotspot name, password or IP address. These changes take effect immediately and will disconnect all connected users.</p>
+        <div style="background:#3a1f1f;border:1px solid #6b2e2e;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#f5a0a0;font-size:0.88rem;">
+          &#9888; Changing the WiFi password or name will disconnect everyone currently connected. They will need to reconnect using the new credentials.
+        </div>
+        <form method="post" action="/save-wifi" id="wifiForm" onsubmit="return confirmWifi()">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;"><label style="font-size:12px;color:#888;">WiFi Name (SSID)</label><br>
+              <input type="text" name="wifi_ssid" value="{{ wifi_ssid }}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font-size:13px;margin-top:4px;">
+            </td></tr>
+            <tr><td style="padding:6px 0;"><label style="font-size:12px;color:#888;">WiFi Password (min 8 characters)</label><br>
+              <input type="text" name="wifi_password" value="{{ wifi_password }}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font-size:13px;margin-top:4px;">
+            </td></tr>
+          </table>
+          <button type="submit">Save WiFi Settings</button>
+        </form>
+        <div id="wifi-saving" style="display:none;margin-top:16px;background:#1a3a1a;border:1px solid #2e6b2e;border-radius:10px;padding:14px 16px;color:#90d090;font-size:0.9rem;">
+          <strong>WiFi settings saved.</strong> The hotspot is restarting.<br>
+          <span style="font-size:0.85rem;color:#6aaa6a;">Reconnect to the WiFi network using the new credentials, then reload this page.</span>
+        </div>
+        <script>
+        function confirmWifi() {
+          const ssid = document.querySelector('[name=wifi_ssid]').value.trim();
+          const pwd = document.querySelector('[name=wifi_password]').value.trim();
+          if (pwd.length < 8) { alert('Password must be at least 8 characters.'); return false; }
+          if (!confirm('This will restart the WiFi hotspot and disconnect all users. Continue?')) return false;
+          setTimeout(() => {
+            document.getElementById('wifiForm').style.display = 'none';
+            document.getElementById('wifi-saving').style.display = 'block';
+          }, 100);
+          return true;
+        }
+        </script>
       </div>
 
       <div class="panel">
@@ -737,6 +995,7 @@ HTML_TEMPLATE = """
         .qi-state.done{color:#0a7a2f;font-weight:bold;}
         .qi-state.error{color:#8b1e1e;font-weight:bold;}
         .qi-state.active{color:#111;}
+    .svc-row:last-child{border-bottom:none !important;}
       </style>
 
       <script>
@@ -1021,7 +1280,7 @@ HTML_TEMPLATE = """
   <footer>
     <div class="footer-left">
       <span class="footer-logo">xPrep</span>
-      <span id="footer-version" style="color:#bbb;font-size:0.78rem;">v1.0.0</span>
+      <span id="footer-version" style="color:#bbb;font-size:0.78rem;">—</span>
       <a href="/">Home</a>
     </div>
     <div class="footer-center">
@@ -1074,6 +1333,15 @@ HTML_TEMPLATE = """
     body.dark #theme-toggle { background:#242424; border-color:#444; }
     body.dark header { background:#242424; border-color:#333; }
     body.dark .loader-box { background:#242424; border-color:#333; }
+    body:not(.dark) .settings-card { background:#f5f5f5 !important; border-color:#e0e0e0 !important; }
+    body:not(.dark) .settings-card .card-label { color:#161616 !important; }
+    body:not(.dark) .settings-card .card-sub-label { color:#888 !important; }
+    body:not(.dark) .settings-card .card-desc-label { color:#aaa !important; }
+    body:not(.dark) .settings-card .card-icon { color:#555 !important; }
+    body:not(.dark) .settings-card.enabled { border-color:#5EA259 !important; background:#f6fbf6 !important; }
+    .settings-card.drag-over { border-color:#5EA259 !important; transform:scale(1.03); }
+    .settings-card { cursor:default !important; }
+    .drag-handle:hover { color:#5EA259 !important; }
   </style>
 
   <script>
@@ -1086,14 +1354,15 @@ HTML_TEMPLATE = """
           const networkIp = d.ips.find(ip => !ip.startsWith("55.55.55."));
           document.getElementById("stat-network-ip").textContent = networkIp || "—";
         }
+        function setEl(id, val) { const e = document.getElementById(id); if (e) e.textContent = val; }
         if (d.storage) {
-          document.getElementById("stat-storage").textContent = d.storage.free_gb + " GB free";
-          document.getElementById("stat-storage-footer").textContent = d.storage.free_gb + " GB";
+          setEl("stat-storage", d.storage.free_gb + " GB free");
+          setEl("stat-storage-footer", d.storage.free_gb + " GB");
         }
         if (d.connected_users !== undefined) {
           const u = d.connected_users + " user" + (d.connected_users !== 1 ? "s" : "");
-          document.getElementById("stat-users").textContent = u;
-          document.getElementById("stat-users-footer").textContent = u;
+          setEl("stat-users", u);
+          setEl("stat-users-footer", u);
         }
         if (d.version) document.getElementById("footer-version").textContent = "v" + d.version;
       } catch(e) {}
@@ -1123,6 +1392,43 @@ HTML_TEMPLATE = """
     const savedTheme = localStorage.getItem("xprep-theme");
     if (savedTheme === "dark") { document.body.classList.add("dark"); setIcons(true); }
     else { setIcons(false); }
+  </script>
+  <div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:99999;background:#151515;color:white;padding:12px 20px;border-radius:10px;font-size:0.9rem;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:flex;align-items:center;gap:10px;transition:opacity 0.3s;">
+    <span id="toast-icon" style="font-size:1.1rem;">✓</span>
+    <span id="toast-msg"></span>
+  </div>
+  <script>
+    function showToast(msg, type) {
+      const t = document.getElementById("toast");
+      const m = document.getElementById("toast-msg");
+      const i = document.getElementById("toast-icon");
+      m.textContent = msg;
+      if (type === "error") {
+        t.style.background = "#8b1e1e";
+        i.textContent = "✕";
+      } else {
+        t.style.background = "#151515";
+        i.textContent = "✓";
+      }
+      t.style.display = "flex";
+      t.style.opacity = "1";
+      setTimeout(() => {
+        t.style.opacity = "0";
+        setTimeout(() => { t.style.display = "none"; }, 300);
+      }, 3000);
+    }
+    // Check for msg in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const msg = urlParams.get("msg");
+    const msgType = urlParams.get("msgtype") || "success";
+    if (msg) {
+      setTimeout(() => showToast(decodeURIComponent(msg), msgType), 300);
+      // Clean URL
+      const url = new URL(window.location);
+      url.searchParams.delete("msg");
+      url.searchParams.delete("msgtype");
+      window.history.replaceState({}, "", url);
+    }
   </script>
 </body>
 </html>
@@ -1194,7 +1500,7 @@ def expat_update():
 @app.route("/")
 def index():
     active_tab = request.args.get("tab", "settings")
-    if active_tab not in ["settings", "maps", "kiwix", "videos", "documents"]:
+    if active_tab not in ["settings", "maps", "kiwix", "videos", "documents", "status"]:
         active_tab = "settings"
 
     context = {"active_tab": active_tab}

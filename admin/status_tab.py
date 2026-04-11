@@ -53,17 +53,77 @@ def get_version():
     try:
         if VERSION_FILE.exists():
             return VERSION_FILE.read_text().strip()
+        # Fall back to config.env
+        import re
+        from pathlib import Path
+        config_env = Path(__file__).resolve().parents[1] / "config.env"
+        if config_env.exists():
+            m = re.search(r'VERSION="([^"]+)"', config_env.read_text())
+            if m:
+                return m.group(1)
         return "1.0.0"
     except:
         return "1.0.0"
 
+def get_uptime():
+    try:
+        result = subprocess.run(["uptime", "-p"], capture_output=True, text=True, timeout=3)
+        return result.stdout.strip().replace("up ", "")
+    except:
+        return "unknown"
+
+def get_service_status(service):
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-active", service],
+            capture_output=True, text=True, timeout=3
+        )
+        return result.stdout.strip() == "active"
+    except:
+        return False
+
+def get_maps_info():
+    try:
+        from pathlib import Path
+        maps_dir = Path("/opt/xprep/maps/data")
+        if not maps_dir.exists():
+            return {"count": 0, "size_gb": 0}
+        files = list(maps_dir.glob("*.pmtiles"))
+        total = sum(f.stat().st_size for f in files)
+        return {"count": len(files), "size_gb": round(total / (1024**3), 2)}
+    except:
+        return {"count": 0, "size_gb": 0}
+
+def get_wifi_ssid():
+    try:
+        from pathlib import Path
+        conf = Path("/etc/hostapd/hostapd.conf").read_text()
+        for line in conf.splitlines():
+            if line.startswith("ssid="):
+                return line.split("=", 1)[1].strip()
+    except:
+        pass
+    return "xPrep"
+
 def register_status_api(app):
     @app.route("/api/status")
     def api_status():
+        services = {
+            "WiFi Hotspot": get_service_status("hostapd"),
+            "Web Server": get_service_status("nginx"),
+            "Admin Panel": get_service_status("xprep-admin"),
+            "Kiwix": get_service_status("xprep-kiwix"),
+            "Kolibri": get_service_status("xprep-kolibri"),
+            "Calibre": get_service_status("xprep-calibre"),
+        }
         return jsonify({
             "hostname": get_hostname(),
             "ips": get_ips(),
             "storage": get_storage(),
             "connected_users": get_connected_users(),
             "version": get_version(),
+            "uptime": get_uptime(),
+            "services": services,
+            "maps": get_maps_info(),
+            "wifi_ssid": get_wifi_ssid(),
         })

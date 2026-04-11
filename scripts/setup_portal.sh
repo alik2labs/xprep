@@ -74,6 +74,7 @@ template = template_path.read_text()
 config = json.loads(config_path.read_text())
 
 cards = []
+saved_order = config.get("order", None)
 
 ICONS = {
     "documents": '<svg width="26" height="26" viewBox="0 0 40 40" fill="none"><rect x="8" y="4" width="20" height="26" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M22 4v8h6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="12" y1="18" x2="24" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="22" x2="24" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="26" x2="20" y2="26" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
@@ -105,42 +106,24 @@ def make_card(href, icon_key, title, sub, desc, onclick=None):
         return f'''<a class="card" href="#" onclick="{onclick}; return false;">{icon}<div class="card-title">{title}</div><div class="card-sub">{sub}</div><div class="card-desc">{desc}</div></a>'''
     return f'''<a class="card" href="{href}">{icon}<div class="card-title">{title}</div><div class="card-sub">{sub}</div><div class="card-desc">{desc}</div></a>'''
 
-if config.get("documents"):
-    cards.append(make_card("/documents/", "documents", "Files", "Local Files", "Saved files, documents and more."))
+ALL_CARDS = {
+    "documents": lambda: make_card("/documents/", "documents", "Files", "Local Files", "Saved files, documents and more."),
+    "usb": lambda: make_card("/usb-drive/", "usb", "External Storage", "USB Drive", "Access files from a connected USB drive."),
+    "videos": lambda: make_card("/videos/", "videos", "Videos", "Media Player", "Watch locally stored video files in your browser."),
+    "kiwix": lambda: make_card(None, "kiwix", "Library", "Kiwix", "Offline Wikipedia, medical references and guides.", "window.location.href=window.location.protocol + '//' + window.location.hostname + ':8084'"),
+    "kolibri": lambda: make_card(None, "kolibri", "Learn", "Kolibri", "Offline courses and educational content for all ages.", "window.location.href=window.location.protocol + '//' + window.location.hostname + ':8090'"),
+    "calibre": lambda: make_card(None, "calibre", "eBooks", "Calibre Library", "Browse and read your offline eBook collection.", "window.location.href=window.location.protocol + '//' + window.location.hostname + ':8083'"),
+    "tools": lambda: '<a class="card" href="/tools/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><path d="M30 10l-4 4-6-6 4-4a8 8 0 016 6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M20 14L8 26a2 2 0 000 3l3 3a2 2 0 003 0l12-12" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><div class="card-title">Tools</div><div class="card-sub">Field Utilities</div><div class="card-desc">Offline calculators, converters and reference tools.</div></a>',
+    "prayer": lambda: '<a class="card" href="/prayer/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><path d="M20 4C20 4 8 12 8 22a12 12 0 0024 0C32 12 20 4 20 4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M20 16v8M16 20h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><div class="card-title">Prayer</div><div class="card-sub">Times & Qibla</div><div class="card-desc">Offline prayer times, Qibla direction and Hijri calendar.</div></a>',
+    "maps": lambda: '<a class="card" href="/maps/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><path d="M15 5L5 9v26l10-4 10 4 10-4V5L25 9 15 5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="15" y1="5" x2="15" y2="31" stroke="currentColor" stroke-width="1.5"/><line x1="25" y1="9" x2="25" y2="35" stroke="currentColor" stroke-width="1.5"/></svg><div class="card-title">Maps</div><div class="card-sub">Offline Maps</div><div class="card-desc">Navigate offline with downloaded regional maps.</div></a>',
+    "games": lambda: '<a class="card" href="/games/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><rect x="4" y="12" width="32" height="18" rx="4" stroke="currentColor" stroke-width="1.5"/><line x1="13" y1="18" x2="13" y2="24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="24" cy="19" r="1.5" fill="currentColor"/><circle cx="28" cy="23" r="1.5" fill="currentColor"/></svg><div class="card-title">Games</div><div class="card-sub">Classic Games</div><div class="card-desc">Pong, Snake, Tetris and more offline games.</div></a>',
+    "expat": lambda: '<a class="card" href="/expat/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="6" width="32" height="28" rx="3" stroke="currentColor"/><line x1="4" y1="14" x2="36" y2="14" stroke="currentColor"/><line x1="14" y1="6" x2="14" y2="34" stroke="currentColor"/><circle cx="9" cy="10" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="24" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="29" r="1.5" fill="currentColor" stroke="none"/></svg><div class="card-title">ExpatPrepper</div><div class="card-sub">Urban Survival Guide</div><div class="card-desc">Offline copy of expatprepper.org. Update when connected.</div></a>',
+}
 
-if config.get("usb"):
-    cards.append(make_card("/usb-drive/", "usb", "External Storage", "USB Drive", "Access files from a connected USB drive."))
-
-if config.get("videos"):
-    cards.append(make_card("/videos/", "videos", "Videos", "Media Player", "Watch locally stored video files in your browser."))
-
-if config.get("kiwix"):
-    kiwix_onclick = "window.location.href=window.location.protocol + '//' + window.location.hostname + ':8084'"
-    cards.append(make_card(None, "kiwix", "Library", "Kiwix", "Offline Wikipedia, medical references and guides.", kiwix_onclick))
-
-if config.get("kolibri"):
-    kolibri_onclick = "window.location.href=window.location.protocol + '//' + window.location.hostname + ':8090'"
-    cards.append(make_card(None, "kolibri", "Learn", "Kolibri", "Offline courses and educational content for all ages.", kolibri_onclick))
-
-if config.get("calibre"):
-    calibre_onclick = "window.location.href=window.location.protocol + '//' + window.location.hostname + ':8083'"
-    cards.append(make_card(None, "calibre", "eBooks", "Calibre Library", "Browse and read your offline eBook collection.", calibre_onclick))
-
-
-if config.get("prayer"):
-    cards.append('''<a class="card" href="/prayer/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><path d="M20 4C20 4 8 12 8 22a12 12 0 0024 0C32 12 20 4 20 4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M20 16v8M16 20h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><div class="card-title">Prayer</div><div class="card-sub">Times & Qibla</div><div class="card-desc">Offline prayer times, Qibla direction and Hijri calendar.</div></a>''')
-
-if config.get("maps"):
-    cards.append('''<a class="card" href="/maps/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><path d="M15 5L5 9v26l10-4 10 4 10-4V5L25 9 15 5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="15" y1="5" x2="15" y2="31" stroke="currentColor" stroke-width="1.5"/><line x1="25" y1="9" x2="25" y2="35" stroke="currentColor" stroke-width="1.5"/></svg><div class="card-title">Maps</div><div class="card-sub">Offline Maps</div><div class="card-desc">Navigate offline with downloaded regional maps.</div></a>''')
-
-if config.get("games"):
-    cards.append('''<a class="card" href="/games/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><rect x="4" y="12" width="32" height="18" rx="4" stroke="currentColor" stroke-width="1.5"/><line x1="13" y1="18" x2="13" y2="24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="24" cy="19" r="1.5" fill="currentColor"/><circle cx="28" cy="23" r="1.5" fill="currentColor"/></svg><div class="card-title">Games</div><div class="card-sub">Classic Games</div><div class="card-desc">Pong, Snake, Tetris and more offline games.</div></a>''')
-
-if config.get("expat"):
-    cards.append('''<a class="card" href="/expat/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="6" width="32" height="28" rx="3" stroke="currentColor"/><line x1="4" y1="14" x2="36" y2="14" stroke="currentColor"/><line x1="14" y1="6" x2="14" y2="34" stroke="currentColor"/><circle cx="9" cy="10" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="24" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="29" r="1.5" fill="currentColor" stroke="none"/></svg><div class="card-title">ExpatPrepper</div><div class="card-sub">Urban Survival Guide</div><div class="card-desc">Offline copy of expatprepper.org. Update when connected.</div></a>''')
-
-if config.get("PLACEHOLDER_GAMES"):
-    cards.append('''<a class="card" href="/prayer/"><svg width="26" height="26" viewBox="0 0 40 40" fill="none"><path d="M20 4C20 4 8 12 8 22a12 12 0 0024 0C32 12 20 4 20 4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M20 16v8M16 20h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><div class="card-title">Prayer</div><div class="card-sub">Times & Qibla</div><div class="card-desc">Offline prayer times, Qibla direction and Hijri calendar.</div></a>''')
+order = config.get("order", list(ALL_CARDS.keys()))
+for key in order:
+    if config.get(key) and key in ALL_CARDS:
+        cards.append(ALL_CARDS[key]())
 
 html = template.replace("__SECTION_CARDS__", "\n".join(cards))
 
