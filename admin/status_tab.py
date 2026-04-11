@@ -53,6 +53,14 @@ def get_version():
     try:
         if VERSION_FILE.exists():
             return VERSION_FILE.read_text().strip()
+        # Fall back to config.env
+        import re
+        from pathlib import Path
+        config_env = Path(__file__).resolve().parents[1] / "config.env"
+        if config_env.exists():
+            m = re.search(r'VERSION="([^"]+)"', config_env.read_text())
+            if m:
+                return m.group(1)
         return "1.0.0"
     except:
         return "1.0.0"

@@ -1280,7 +1280,7 @@ HTML_TEMPLATE = """
   <footer>
     <div class="footer-left">
       <span class="footer-logo">xPrep</span>
-      <span id="footer-version" style="color:#bbb;font-size:0.78rem;">v1.0.0</span>
+      <span id="footer-version" style="color:#bbb;font-size:0.78rem;">—</span>
       <a href="/">Home</a>
     </div>
     <div class="footer-center">
