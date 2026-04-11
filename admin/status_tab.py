@@ -39,13 +39,31 @@ def get_storage():
 
 def get_connected_users():
     try:
-        result = subprocess.run(
-            ["arp", "-n"],
-            capture_output=True, text=True, timeout=3
-        )
-        lines = [l for l in result.stdout.strip().split("\n")[1:]
-                 if "10.10.10." in l and "incomplete" not in l]
-        return len(lines)
+        import time
+        from pathlib import Path
+        now = int(time.time())
+
+        # Get active leases MACs
+        leases_file = Path("/var/lib/misc/dnsmasq.leases")
+        if not leases_file.exists():
+            leases_file = Path("/tmp/dnsmasq.leases")
+        active_macs = set()
+        if leases_file.exists():
+            for line in leases_file.read_text().splitlines():
+                parts = line.split()
+                if len(parts) >= 3 and int(parts[0]) > now:
+                    active_macs.add(parts[1].lower())
+
+        # Get MACs currently in arp table on wlan0
+        result = subprocess.run(["arp", "-n"], capture_output=True, text=True, timeout=3)
+        arp_macs = set()
+        for line in result.stdout.strip().split("\n")[1:]:
+            parts = line.split()
+            if len(parts) >= 5 and "wlan0" in parts and "incomplete" not in line:
+                arp_macs.add(parts[2].lower())
+
+        # Only count devices that are both in leases and arp
+        return len(active_macs & arp_macs)
     except:
         return 0
 
