@@ -812,8 +812,15 @@ HTML_TEMPLATE = """
       </div>
 
       <div class="panel">
-        <h2>Download Map</h2>
-        <p class="note">Extract a region from a PMTiles source using bounding box coordinates. Find bbox at <a href="http://bboxfinder.com" target="_blank">bboxfinder.com</a>.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleAdvanced()">
+          <div>
+            <h2 style="margin:0;">Advanced</h2>
+            <p class="note" style="margin:4px 0 0;">Manual map extract using custom bounding box.</p>
+          </div>
+          <span id="advanced-chevron" style="font-size:1.2rem;color:#888;transition:transform 0.2s;">&#9658;</span>
+        </div>
+        <div id="advanced-content" style="display:none;margin-top:16px;">
+        <p class="note" style="margin-bottom:12px;">Extract a region from a PMTiles source using bounding box coordinates. Find bbox at <a href="http://bboxfinder.com" target="_blank">bboxfinder.com</a>.</p>
         <form method="post" action="/download-map" id="downloadMapForm">
           <table style="width:100%;border-collapse:collapse;">
             <tr>
@@ -915,6 +922,16 @@ HTML_TEMPLATE = """
                 startPolling();
               }
             });
+        </script>
+        </div><!-- end advanced-content -->
+        <script>
+          function toggleAdvanced() {
+            const content = document.getElementById("advanced-content");
+            const chevron = document.getElementById("advanced-chevron");
+            const open = content.style.display === "none";
+            content.style.display = open ? "block" : "none";
+            chevron.style.transform = open ? "rotate(90deg)" : "rotate(0deg)";
+          }
         </script>
       </div>
 
