@@ -8,29 +8,92 @@
   <script src="vendor/leaflet.min.js"></script>
   <script src="vendor/protomaps-leaflet.js"></script>
   <style>
-    html, body { margin:0; padding:0; height:100%; font-family: Arial, sans-serif; }
+    @font-face { font-family: "PixelifySans"; src: url("/fonts/PixelifySans-Bold.ttf") format("truetype"); font-weight: 700; }
+    html, body { margin:0; padding:0; height:100%; font-family: Arial, sans-serif; background:#1a1a1a; }
     #map { position:absolute; inset:0; }
+
     #controls {
       position:absolute; top:10px; left:10px; z-index:1000;
-      background:white; padding:12px 14px; border-radius:12px;
-      border:1px solid #ddd; min-width:240px;
-      box-shadow:0 4px 12px rgba(0,0,0,0.12);
+      background:white; border-radius:14px; border:1px solid #ddd;
+      box-shadow:0 4px 16px rgba(0,0,0,0.15);
+      width:260px; overflow:hidden;
+      transition:width 0.2s;
     }
-    #controls-title { font-size:0.7rem; color:#aaa; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
-    #mapSelect { width:100%; padding:7px 10px; border:1px solid #ddd; border-radius:8px; font-size:0.85rem; background:white; color:#161616; margin-bottom:6px; }
+
+    #controls-header {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px 14px; border-bottom:1px solid #eee;
+      cursor:pointer; user-select:none;
+    }
+    #controls-logo {
+      font-family: "PixelifySans", Arial, sans-serif;
+      font-weight:700; font-size:1.1rem; color:#5EA259;
+    }
+    #controls-header-right { display:flex; gap:8px; align-items:center; }
+    .ctrl-btn {
+      background:none; border:1px solid #eee; border-radius:7px;
+      padding:4px 7px; cursor:pointer; color:#666; font-size:0.75rem;
+      display:flex; align-items:center; gap:3px;
+    }
+    .ctrl-btn:hover { background:#f5f5f5; border-color:#ccc; }
+
+    #controls-body { padding:12px 14px; }
+    #controls-body.collapsed { display:none; }
+
+    #mapSelect {
+      width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:8px;
+      font-size:0.88rem; background:white; color:#161616; margin-bottom:10px;
+      cursor:pointer;
+    }
     #mapSelect:focus { outline:none; border-color:#5EA259; }
-    #map-meta { display:flex; justify-content:space-between; font-size:11px; color:#aaa; margin-bottom:6px; }
-    .coord-row { display:flex; gap:4px; margin-top:6px; }
-    .coord-row input { flex:1; padding:6px 8px; border:1px solid #ddd; border-radius:8px; font-size:0.78rem; color:#161616; }
-    .coord-row button { background:#161616; color:white; border:none; border-radius:8px; padding:6px 10px; font-size:0.78rem; cursor:pointer; }
-    #controls-back { display:block; margin-top:10px; text-align:center; color:#555; text-decoration:none; font-size:0.8rem; padding:5px; border:1px solid #eee; border-radius:6px; }
-    #controls-back:hover { background:#f3f3f1; }
-    #status { font-size:11px; color:#888; margin-bottom:4px; }
-    #noMaps { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#f3f3f1; z-index:500; }
-    #noMaps .box { background:white; border:1px solid #ddd; border-radius:14px; padding:32px 40px; text-align:center; max-width:360px; }
+
+    .meta-row {
+      display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;
+    }
+    .meta-pill {
+      background:#f5f5f5; border-radius:999px; padding:3px 10px;
+      font-size:0.75rem; color:#666; border:1px solid #eee;
+    }
+    .meta-pill b { color:#333; }
+
+    #status { font-size:11px; color:#888; margin-bottom:8px; min-height:14px; }
+
+    .coord-row { display:flex; gap:4px; margin-bottom:10px; }
+    .coord-row input {
+      flex:1; padding:7px 8px; border:1px solid #ddd; border-radius:8px;
+      font-size:0.78rem; color:#161616;
+    }
+    .coord-row input:focus { outline:none; border-color:#5EA259; }
+    .coord-row button {
+      background:#161616; color:white; border:none; border-radius:8px;
+      padding:7px 10px; font-size:0.78rem; cursor:pointer; white-space:nowrap;
+    }
+    .coord-row button:hover { background:#333; }
+
+    #controls-back {
+      display:block; text-align:center; color:#888; text-decoration:none;
+      font-size:0.78rem; padding:6px; border:1px solid #eee; border-radius:8px;
+    }
+    #controls-back:hover { background:#f5f5f5; color:#333; }
+
+    #noMaps {
+      position:absolute; inset:0; display:flex; align-items:center;
+      justify-content:center; background:#f3f3f1; z-index:500;
+    }
+    #noMaps .box {
+      background:white; border:1px solid #ddd; border-radius:14px;
+      padding:32px 40px; text-align:center; max-width:360px;
+    }
     #noMaps h2 { margin:0 0 12px; }
     #noMaps p { color:#555; margin:0 0 20px; line-height:1.5; }
-    #noMaps a { display:inline-block; background:#151515; color:white; padding:12px 20px; border-radius:10px; text-decoration:none; font-weight:bold; }
+    #noMaps a {
+      display:inline-block; background:#151515; color:white;
+      padding:12px 20px; border-radius:10px; text-decoration:none; font-weight:bold;
+    }
+
+    @media (max-width: 500px) {
+      #controls { width: calc(100vw - 20px); }
+    }
   </style>
 </head>
 <body>
@@ -43,32 +106,63 @@
   </div>
 
   <div id="controls">
-    <div id="controls-title">xPrep Maps</div>
-    <select id="mapSelect"><option>Loading...</option></select>
-    <div id="status">Starting...</div>
-    <div id="map-meta">
-      <span>Zoom: <b id="zoom-level">-</b></span>
-      <span id="map-info"></span>
+    <div id="controls-header" onclick="toggleControls()">
+      <span id="controls-logo">xPrep</span>
+      <div id="controls-header-right">
+        <button class="ctrl-btn" onclick="event.stopPropagation();toggleFullscreen();" title="Fullscreen">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+        </button>
+        <button class="ctrl-btn" id="collapse-btn" title="Collapse">&#9660;</button>
+      </div>
     </div>
-    <div class="coord-row">
-      <input id="coord-input" type="text" placeholder="lat, lon — press Enter">
-      <button onclick="jumpToCoord()">Go</button>
+    <div id="controls-body">
+      <select id="mapSelect"><option>Loading...</option></select>
+      <div class="meta-row" id="map-meta" style="display:none;">
+        <span class="meta-pill">Zoom: <b id="zoom-level">-</b></span>
+        <span class="meta-pill" id="meta-maxzoom" style="display:none;">Max: <b id="max-zoom-val">-</b></span>
+        <span class="meta-pill" id="meta-size" style="display:none;"><b id="map-size-val">-</b></span>
+      </div>
+      <div id="status">Starting...</div>
+      <div class="coord-row">
+        <input id="coord-input" type="text" placeholder="lat, lon">
+        <button onclick="jumpToCoord()">Go</button>
+      </div>
+      <a href="/" id="controls-back">&#8592; Back to Home</a>
     </div>
-    <a href="/" id="controls-back">Back to Home</a>
   </div>
+
   <div id="map"></div>
 
   <script>
     const select = document.getElementById("mapSelect");
     const statusEl = document.getElementById("status");
-    let map = null;
-    let currentLayer = null;
-    let currentMarker = null;
+    let map = null, currentLayer = null, currentMarker = null;
+    let controlsCollapsed = false;
+    let mapsData = [];
 
     function setStatus(msg) { statusEl.textContent = msg; }
 
+    function toggleControls() {
+      controlsCollapsed = !controlsCollapsed;
+      document.getElementById("controls-body").classList.toggle("collapsed", controlsCollapsed);
+      document.getElementById("collapse-btn").innerHTML = controlsCollapsed ? "&#9650;" : "&#9660;";
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
     function initMap() {
-      map = L.map("map", { zoomControl: false });
+      map = L.map("map", {
+        zoomControl: false,
+        worldCopyJump: false,
+        maxBounds: [[-90, -180], [90, 180]],
+        maxBoundsViscosity: 1.0
+      });
       L.control.zoom({ position: "topright" }).addTo(map);
       L.control.scale({ position: "bottomright" }).addTo(map);
       map.on("zoom", () => {
@@ -79,26 +173,13 @@
     async function loadMap(filename) {
       if (!map) initMap();
       setStatus("Loading...");
-
       const url = "http://" + location.hostname + "/maps/data/" + filename;
-
       try {
-        // Remove existing layer
         if (currentLayer) { map.removeLayer(currentLayer); currentLayer = null; }
-
-        // Detect flavor based on filename
         const isBase = filename === "base.pmtiles";
-        const flavor = "light";
-
-        currentLayer = protomapsL.leafletLayer({
-          url: url,
-          flavor: flavor,
-          lang: "en"
-        });
-
+        currentLayer = protomapsL.leafletLayer({ url: url, flavor: "light", lang: "en", noWrap: true });
         currentLayer.addTo(map);
 
-        // Get bounds from API metadata
         const metaRes = await fetch("/api/maps/info?file=" + encodeURIComponent(filename));
         if (metaRes.ok) {
           const meta = await metaRes.json();
@@ -114,13 +195,20 @@
           map.setView([20, 0], 2);
         }
 
-        document.getElementById("zoom-level").textContent = map.getZoom();
-        document.getElementById("map-info").textContent = filename.replace(".pmtiles","");
-        setStatus("Loaded");
+        // Show metadata
+        const mapInfo = mapsData.find(m => m.filename === filename);
+        if (mapInfo) {
+          document.getElementById("map-meta").style.display = "flex";
+          document.getElementById("meta-maxzoom").style.display = "inline-block";
+          document.getElementById("max-zoom-val").textContent = mapInfo.zoom !== "-" ? mapInfo.zoom : "?";
+          document.getElementById("meta-size").style.display = "inline-block";
+          document.getElementById("map-size-val").textContent = mapInfo.size;
+        }
 
+        document.getElementById("zoom-level").textContent = map.getZoom();
+        setStatus("Loaded: " + (mapInfo ? mapInfo.name : filename));
       } catch(err) {
         setStatus("Error: " + err.message);
-        console.error(err);
       }
     }
 
@@ -134,10 +222,9 @@
       map.flyTo([lat, lng], 14);
       if (currentMarker) map.removeLayer(currentMarker);
       currentMarker = L.circleMarker([lat, lng], {
-        radius: 8, fillColor: "#5EA259", fillOpacity: 1,
-        color: "white", weight: 3
+        radius: 8, fillColor: "#5EA259", fillOpacity: 1, color: "white", weight: 3
       }).addTo(map);
-      setStatus("Jumped to: " + lat.toFixed(4) + ", " + lng.toFixed(4));
+      setStatus("Jumped to " + lat.toFixed(4) + ", " + lng.toFixed(4));
     }
 
     document.getElementById("coord-input").addEventListener("keydown", e => {
@@ -148,29 +235,22 @@
       try {
         const res = await fetch("/api/maps/list?t=" + Date.now());
         const data = await res.json();
-        const maps = data.maps || [];
-
+        mapsData = data.maps || [];
         select.innerHTML = "";
-
-        if (!maps.length) {
+        if (!mapsData.length) {
           document.getElementById("noMaps").style.display = "flex";
           document.getElementById("controls").style.display = "none";
           return;
         }
-
-        // Sort base to top
-        maps.sort((a, b) => a.deletable === b.deletable ? 0 : a.deletable ? 1 : -1);
-
-        maps.forEach(m => {
+        mapsData.sort((a, b) => a.deletable === b.deletable ? 0 : a.deletable ? 1 : -1);
+        mapsData.forEach(m => {
           const opt = document.createElement("option");
           opt.value = m.filename;
           opt.textContent = m.name;
           select.appendChild(opt);
         });
-
         select.addEventListener("change", () => loadMap(select.value));
-        loadMap(maps[0].filename);
-
+        loadMap(mapsData[0].filename);
       } catch(err) {
         setStatus("Init error: " + err);
       }
