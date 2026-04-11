@@ -216,6 +216,7 @@ HTML_TEMPLATE = """
     .qi-state.done{color:#0a7a2f;font-weight:bold;}
     .qi-state.error{color:#8b1e1e;font-weight:bold;}
     .qi-state.active{color:#111;}
+    .svc-row:last-child{border-bottom:none !important;}
     body.dark .panel { background:#242424; border-color:#333; }
     body.dark .tab { background:#2a2a2a; color:#ccc; }
     body.dark .tab.active { background:#e0e0e0; color:#111; }
@@ -375,12 +376,12 @@ HTML_TEMPLATE = """
               if (d.services) {
                 const el = document.getElementById("d-services");
                 el.innerHTML = Object.entries(d.services).map(([name, running]) =>
-                  '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee;font-size:0.9rem;">' +
+                  '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee;font-size:0.9rem;" class="svc-row">' +
                   '<div style="width:10px;height:10px;border-radius:50%;background:' + (running ? '#5EA259' : '#8b1e1e') + ';flex-shrink:0;"></div>' +
                   '<span style="flex:1;">' + name + '</span>' +
                   '<span style="color:' + (running ? '#5EA259' : '#8b1e1e') + ';font-size:0.82rem;font-weight:bold;">' + (running ? 'Running' : 'Stopped') + '</span>' +
                   '</div>'
-                ).join("").replace(/border-bottom:1px solid #eee;">$/, 'border-bottom:none;">');
+                ).join("");
               }
             });
         }
@@ -994,6 +995,7 @@ HTML_TEMPLATE = """
         .qi-state.done{color:#0a7a2f;font-weight:bold;}
         .qi-state.error{color:#8b1e1e;font-weight:bold;}
         .qi-state.active{color:#111;}
+    .svc-row:last-child{border-bottom:none !important;}
       </style>
 
       <script>
@@ -1352,14 +1354,15 @@ HTML_TEMPLATE = """
           const networkIp = d.ips.find(ip => !ip.startsWith("55.55.55."));
           document.getElementById("stat-network-ip").textContent = networkIp || "—";
         }
+        function setEl(id, val) { const e = document.getElementById(id); if (e) e.textContent = val; }
         if (d.storage) {
-          document.getElementById("stat-storage").textContent = d.storage.free_gb + " GB free";
-          document.getElementById("stat-storage-footer").textContent = d.storage.free_gb + " GB";
+          setEl("stat-storage", d.storage.free_gb + " GB free");
+          setEl("stat-storage-footer", d.storage.free_gb + " GB");
         }
         if (d.connected_users !== undefined) {
           const u = d.connected_users + " user" + (d.connected_users !== 1 ? "s" : "");
-          document.getElementById("stat-users").textContent = u;
-          document.getElementById("stat-users-footer").textContent = u;
+          setEl("stat-users", u);
+          setEl("stat-users-footer", u);
         }
         if (d.version) document.getElementById("footer-version").textContent = "v" + d.version;
       } catch(e) {}
