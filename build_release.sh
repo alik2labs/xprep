@@ -34,7 +34,7 @@ FTP_URL="ftp://ftp.aliabuzoha.com/xprep.tar.gz"
 FTP_USER="maximus@expatprepper.org:$FTP_PASSWORD"
 
 echo "[upload] Uploading to expatprepper.org..."
-curl -s -T "$TARBALL" "$FTP_URL" --user "$FTP_USER" --max-time 120 --retry 2
+curl -T "$TARBALL" "$FTP_URL" --user "$FTP_USER" --max-time 120 --retry 2 -#
 echo "[upload] expatprepper.org done."
 
 echo "[upload] Uploading to GitHub release..."
