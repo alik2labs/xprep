@@ -302,6 +302,7 @@ HTML_TEMPLATE = """
             <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Version</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-version">—</td></tr>
             <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Uptime</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-uptime">—</td></tr>
             <tr><td style="padding:8px 0;color:#888;">WiFi Name</td><td style="padding:8px 0;" id="d-ssid">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-top:1px solid #eee;">Usage Report</td><td style="padding:8px 0;border-top:1px solid #eee;font-size:0.85rem;" id="d-ping-status">—</td></tr>
           </table>
         </div>
 
@@ -371,6 +372,18 @@ HTML_TEMPLATE = """
               if (d.maps) {
                 document.getElementById("d-maps-count").textContent = d.maps.count + " file" + (d.maps.count !== 1 ? "s" : "");
                 document.getElementById("d-maps-size").textContent = d.maps.size_gb + " GB";
+              }
+
+              const pingEl = document.getElementById("d-ping-status");
+              if (pingEl) {
+                if (d.last_ping_days === null || d.last_ping_days === undefined) {
+                  pingEl.innerHTML = '<span style="color:#888;">&#9679;</span> Never sent';
+                } else if (d.last_ping_days <= 7) {
+                  const daysText = d.last_ping_days < 1 ? 'today' : d.last_ping_days + ' days ago';
+                  pingEl.innerHTML = '<span style="color:#5EA259;">&#9679;</span> Last update sent ' + daysText;
+                } else {
+                  pingEl.innerHTML = '<span style="color:#c47a00;">&#9679;</span> Last update sent ' + d.last_ping_days + ' days ago';
+                }
               }
 
               if (d.services) {

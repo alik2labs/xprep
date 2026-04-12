@@ -123,6 +123,26 @@ def get_wifi_ssid():
         pass
     return "xPrep"
 
+def run_ping_if_due():
+    try:
+        import subprocess
+        subprocess.Popen(
+            ["python3", "/home/neo/xprep-installer/scripts/ping_home.py"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except:
+        pass
+
+def get_last_ping():
+    try:
+        from pathlib import Path
+        p = Path("/opt/xprep/last_ping.txt")
+        if not p.exists():
+            return None
+        return float(p.read_text().strip())
+    except:
+        return None
+
 def register_status_api(app):
     @app.route("/api/status")
     def api_status():
@@ -134,6 +154,10 @@ def register_status_api(app):
             "Kolibri": get_service_status("xprep-kolibri"),
             "Calibre": get_service_status("xprep-calibre"),
         }
+        run_ping_if_due()
+        last_ping = get_last_ping()
+        import time
+        ping_age_days = round((time.time() - last_ping) / 86400, 1) if last_ping else None
         return jsonify({
             "hostname": get_hostname(),
             "ips": get_ips(),
@@ -144,4 +168,5 @@ def register_status_api(app):
             "services": services,
             "maps": get_maps_info(),
             "wifi_ssid": get_wifi_ssid(),
+            "last_ping_days": ping_age_days,
         })
