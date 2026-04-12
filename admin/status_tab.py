@@ -127,7 +127,7 @@ def run_ping_if_due():
     try:
         import subprocess
         subprocess.Popen(
-            ["python3", "/home/neo/xprep-installer/scripts/ping_home.py"],
+            ["python3", "/opt/xprep/ping_home.py"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
     except:
@@ -178,7 +178,7 @@ def register_status_api(app):
             if ping_file.exists():
                 ping_file.unlink()
             result = subprocess.run(
-                ["python3", "/home/neo/xprep-installer/scripts/ping_home.py"],
+                ["python3", "/opt/xprep/ping_home.py"],
                 capture_output=True, text=True, timeout=20
             )
             if "successfully" in result.stdout:
