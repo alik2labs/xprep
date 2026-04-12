@@ -65,4 +65,17 @@ From here you can manage maps, documents, videos, Kiwix content, and system sett
 
 ## License
 
-Private project. All rights reserved.
+Copyright (c) 2026 Ali Khawaja / ExpatPrepper.org
+
+xPrep is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)**.
+
+You are free to use, share, and adapt xPrep for non-commercial purposes, provided you give appropriate credit to the original author.
+
+**You may not:**
+- Sell xPrep or devices pre-loaded with xPrep
+- Use xPrep as part of a paid commercial service
+- Remove or obscure the original attribution
+
+**For commercial licensing:** contact ali@k2labs.io
+
+Full license: https://creativecommons.org/licenses/by-nc/4.0/
