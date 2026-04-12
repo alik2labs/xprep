@@ -299,10 +299,10 @@ HTML_TEMPLATE = """
           <h3 style="margin:0 0 16px;">Device</h3>
           <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
             <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;width:140px;">Hostname</td><td style="padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;" id="d-hostname">—</td></tr>
-            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Version</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-version">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Version</td><td style="padding:8px 0;border-bottom:1px solid #eee;"><span id="d-version">—</span> <span id="d-version-status"></span></td></tr>
             <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Uptime</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-uptime">—</td></tr>
-            <tr><td style="padding:8px 0;color:#888;">WiFi Name</td><td style="padding:8px 0;" id="d-ssid">—</td></tr>
-            <tr><td style="padding:8px 0;color:#888;border-top:1px solid #eee;">Usage Report</td><td style="padding:8px 0;border-top:1px solid #eee;font-size:0.85rem;" id="d-ping-status">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">WiFi Name</td><td style="padding:8px 0;border-bottom:1px solid #eee;" id="d-ssid">—</td></tr>
+            <tr><td style="padding:8px 0;color:#888;border-bottom:1px solid #eee;">Device Registry</td><td style="padding:8px 0;border-bottom:1px solid #eee;font-size:0.85rem;"><span id="d-ping-status">—</span> <button onclick="manualPing()" style="margin:0;padding:3px 8px;font-size:0.75rem;border-radius:6px;background:#333;" title="Push update now">Push now</button></td></tr>
           </table>
         </div>
 
@@ -348,8 +348,23 @@ HTML_TEMPLATE = """
           fetch("/api/status?t=" + Date.now())
             .then(r => r.json())
             .then(d => {
+              if (!d || !d.hostname) { console.error("Status API returned empty data", d); return; }
               document.getElementById("d-hostname").textContent = d.hostname || "—";
               document.getElementById("d-version").textContent = d.version ? "v" + d.version : "—";
+              const vEl = document.getElementById("d-version-status");
+              if (vEl && d.latest_version) {
+                if (d.latest_version === d.version) {
+                  vEl.innerHTML = '<span style="color:#5EA259;font-size:0.78rem;">&#10003; Up to date</span>';
+                } else {
+                  vEl.innerHTML = '<span style="color:#c47a00;font-size:0.78rem;">&#9650; v' + d.latest_version + ' available &nbsp;<button id="update-btn" data-version="' + d.latest_version + '" style="margin:0;padding:2px 8px;font-size:0.75rem;border-radius:6px;background:#c47a00;color:white;border:none;cursor:pointer;">Update</button></span>';
+                  setTimeout(() => {
+                    const btn = document.getElementById("update-btn");
+                    if (btn) btn.addEventListener("click", () => showUpdateInstructions(btn.dataset.version));
+                  }, 100);
+                }
+              } else if (vEl) {
+                vEl.innerHTML = '<span style="color:#888;font-size:0.78rem;">— offline</span>';
+              }
               document.getElementById("d-uptime").textContent = d.uptime || "—";
               document.getElementById("d-ssid").textContent = d.wifi_ssid || "—";
 
@@ -396,10 +411,42 @@ HTML_TEMPLATE = """
                   '</div>'
                 ).join("");
               }
-            });
+            })
+            .catch(err => console.error("Status fetch error:", err));
         }
         loadStatus();
         setInterval(loadStatus, 15000);
+
+        function showUpdateInstructions(version) {
+          const msg = [
+            "A new version (v" + version + ") is available.",
+            "",
+            "To update, SSH into your Pi and run:",
+            "",
+            "  curl -L -O https://github.com/alik2labs/xprep/releases/latest/download/xprep.tar.gz",
+            "  tar -xzf xprep.tar.gz",
+            "  cd xprep-release",
+            "  sudo bash install.sh",
+            "",
+            "This will update xPrep to the latest version."
+          ].join(String.fromCharCode(10));
+          alert(msg);
+        }
+
+        function manualPing() {
+          if (!confirm("Push a usage update to xPrep servers now?")) return;
+          fetch("/api/status/ping", { method: "POST" })
+            .then(r => r.json())
+            .then(d => {
+              if (d.ok) {
+                showToast("Usage report sent successfully");
+                loadStatus();
+              } else {
+                showToast("Ping failed: " + (d.error || "unknown error"), "error");
+              }
+            })
+            .catch(() => showToast("Ping failed", "error"));
+        }
       </script>
     {% endif %}
 
@@ -1375,7 +1422,7 @@ HTML_TEMPLATE = """
   </style>
 
   <script>
-    async function loadStatus() {
+    async function loadFooterStatus() {
       try {
         const res = await fetch("/api/status");
         const d = await res.json();
@@ -1397,7 +1444,7 @@ HTML_TEMPLATE = """
         if (d.version) document.getElementById("footer-version").textContent = "v" + d.version;
       } catch(e) {}
     }
-    loadStatus();
+    loadFooterStatus();
 
     function updateTime() {
       const now = new Date();

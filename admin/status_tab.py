@@ -133,6 +133,30 @@ def run_ping_if_due():
     except:
         pass
 
+_latest_version_cache = {"version": None, "fetched": 0}
+
+def check_latest_version():
+    import threading, time
+    now = time.time()
+    if now - _latest_version_cache["fetched"] < 3600:
+        return _latest_version_cache["version"]
+    def fetch():
+        try:
+            import urllib.request, json
+            req = urllib.request.Request(
+                "https://api.github.com/repos/alik2labs/xprep/releases/latest",
+                headers={"User-Agent": "xPrep/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as r:
+                data = json.loads(r.read().decode())
+                tag = data.get("tag_name", "").lstrip("v")
+                _latest_version_cache["version"] = tag
+                _latest_version_cache["fetched"] = time.time()
+        except:
+            pass
+    threading.Thread(target=fetch, daemon=True).start()
+    return _latest_version_cache["version"]
+
 def get_last_ping():
     try:
         from pathlib import Path
@@ -144,6 +168,26 @@ def get_last_ping():
         return None
 
 def register_status_api(app):
+    @app.route("/api/status/ping", methods=["POST"])
+    def api_status_ping():
+        try:
+            import subprocess
+            from pathlib import Path
+            # Force ping by temporarily removing last_ping file
+            ping_file = Path("/opt/xprep/last_ping.txt")
+            if ping_file.exists():
+                ping_file.unlink()
+            result = subprocess.run(
+                ["python3", "/home/neo/xprep-installer/scripts/ping_home.py"],
+                capture_output=True, text=True, timeout=20
+            )
+            if "successfully" in result.stdout:
+                return {"ok": True}
+            else:
+                return {"ok": False, "error": result.stdout or result.stderr}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     @app.route("/api/status")
     def api_status():
         services = {
@@ -158,6 +202,7 @@ def register_status_api(app):
         last_ping = get_last_ping()
         import time
         ping_age_days = round((time.time() - last_ping) / 86400, 1) if last_ping else None
+        latest_version = check_latest_version()
         return jsonify({
             "hostname": get_hostname(),
             "ips": get_ips(),
@@ -169,4 +214,5 @@ def register_status_api(app):
             "maps": get_maps_info(),
             "wifi_ssid": get_wifi_ssid(),
             "last_ping_days": ping_age_days,
+            "latest_version": latest_version,
         })
