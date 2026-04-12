@@ -14,8 +14,14 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Validate config
 # ---------------------------------------------------------
 if [ ! -f "$ROOT_DIR/config.env" ]; then
-  echo "[xprep] ERROR: config.env not found"
-  exit 1
+  if [ -f "$ROOT_DIR/config.env.example" ]; then
+    echo "[xprep] config.env not found, copying from config.env.example"
+    cp "$ROOT_DIR/config.env.example" "$ROOT_DIR/config.env"
+    sed -i "s/your_password_here/11223344/" "$ROOT_DIR/config.env"
+  else
+    echo "[xprep] ERROR: config.env not found"
+    exit 1
+  fi
 fi
 
 source "$ROOT_DIR/config.env"
@@ -27,6 +33,7 @@ cd "$ROOT_DIR"
 
 log "Starting xprep Phase 1 installer"
 log "Version: $VERSION"
+mkdir -p /opt/xprep
 echo "$VERSION" > /opt/xprep/version.txt
 log "SSID: $WIFI_SSID"
 log "Offline IP: $PORTAL_IP"
@@ -109,6 +116,11 @@ bash "$ROOT_DIR/scripts/setup_videos.sh"
 
 log "Setting up kolibri..."
 bash "$ROOT_DIR/scripts/setup_kolibri.sh"
+
+log "Setting up device registry ping..."
+mkdir -p /opt/xprep
+cp "$ROOT_DIR/scripts/ping_home.py" /opt/xprep/ping_home.py
+chmod +x /opt/xprep/ping_home.py
 
 log "Enabling services..."
 bash "$ROOT_DIR/scripts/enable_services.sh"
