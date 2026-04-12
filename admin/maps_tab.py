@@ -13,6 +13,18 @@ MAPS_DIR = Path("/opt/xprep/maps/data")
 STATUS_FILE = Path("/opt/xprep/maps/download_status.json")
 DIRECTORY_JSON = Path("/opt/xprep/maps/directory.json")
 MAPS_DIR_TSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT6ELkxDMAPWyAzq1J9w47Rtrg5g0veeR5PvXLobxBZ2IFheXBbuIhV8uUupTTuwSss8OgxQ68OksqI/pub?output=tsv"
+BUILDS_METADATA = "https://build-metadata.protomaps.dev/builds.json"
+
+
+def get_latest_protomaps_url():
+    try:
+        req = urllib.request.Request(BUILDS_METADATA, headers={"User-Agent": "xPrep/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            builds = json.loads(r.read().decode("utf-8"))
+        builds.sort(key=lambda b: b["key"], reverse=True)
+        return "https://build.protomaps.com/" + builds[0]["key"]
+    except Exception:
+        return "https://build.protomaps.com/20260410.pmtiles"
 
 
 def list_maps():
@@ -46,6 +58,7 @@ def list_maps():
 
 
 def _fetch_and_build_directory():
+    _latest_url = get_latest_protomaps_url()
     req = urllib.request.Request(MAPS_DIR_TSV, headers={"User-Agent": "xPrep/1.0"})
     with urllib.request.urlopen(req, timeout=30) as r:
         raw = r.read().decode("utf-8")
@@ -61,26 +74,27 @@ def _fetch_and_build_directory():
         bbox    = (row.get("BBOX") or "").strip()
         maxzoom = (row.get("MaxZoom") or "14").strip()
         size    = (row.get("Estimated Size (MB)") or "").strip()
-        cmd     = (row.get("Command") or "").strip()
+        raw_source = (row.get("Source PMTiles URL") or "").strip()
+        source = _latest_url if raw_source else ""
         if t == "Global":
             continue
         if t == "Continent":
             if name not in region_map:
                 region_map[name] = {"name": name, "entries": []}
                 region_order.append(name)
-            region_map[name]["entries"].insert(0, {"name": name, "filename": p_full, "bbox": bbox, "maxzoom": maxzoom, "size": size, "cmd": cmd, "is_region_file": True})
+            region_map[name]["entries"].insert(0, {"name": name, "filename": p_full, "bbox": bbox, "maxzoom": maxzoom, "size": size, "source": source, "is_region_file": True})
         elif t == "Region":
             key = reg
             if key not in region_map:
                 region_map[key] = {"name": key, "entries": []}
                 region_order.append(key)
-            region_map[key]["entries"].insert(0, {"name": name, "filename": p_full, "bbox": bbox, "maxzoom": maxzoom, "size": size, "cmd": cmd, "is_region_file": True})
+            region_map[key]["entries"].insert(0, {"name": name, "filename": p_full, "bbox": bbox, "maxzoom": maxzoom, "size": size, "source": source, "is_region_file": True})
         elif t == "Country":
             key = reg
             if key not in region_map:
                 region_map[key] = {"name": key, "entries": []}
                 region_order.append(key)
-            region_map[key]["entries"].append({"name": name, "filename": p_full, "bbox": bbox, "maxzoom": maxzoom, "size": size, "cmd": cmd, "is_region_file": False})
+            region_map[key]["entries"].append({"name": name, "filename": p_full, "bbox": bbox, "maxzoom": maxzoom, "size": size, "source": source, "is_region_file": False})
     regions = [region_map[k] for k in region_order if k in region_map]
     return {"regions": regions, "updated": time.strftime("%d %b %Y %H:%M"), "count": len(rows)}
 
@@ -164,20 +178,18 @@ def register_maps_routes(app):
     @app.route("/api/maps/directory-download", methods=["POST"])
     def api_maps_directory_download():
         body     = request.get_json(force=True)
-        cmd_str  = (body.get("cmd") or "").strip()
+        source   = (body.get("source") or "").strip()
         filename = (body.get("filename") or "").strip()
-        if not cmd_str or not filename:
-            return json.dumps({"error": "missing cmd or filename"}), 400, {"Content-Type": "application/json"}
+        bbox     = (body.get("bbox") or "").strip()
+        maxzoom  = (body.get("maxzoom") or "14").strip()
+        if not source or not filename:
+            return json.dumps({"error": "missing source or filename"}), 400, {"Content-Type": "application/json"}
         dest = str(MAPS_DIR / Path(filename).name)
-        parts = cmd_str.split()
-        try:
-            extract_idx = parts.index("extract")
-            parts[0] = "/usr/local/bin/pmtiles"
-            parts[extract_idx + 2] = dest
-            if "--download-threads=4" not in parts:
-                parts.insert(extract_idx + 3, "--download-threads=4")
-        except (ValueError, IndexError):
-            return json.dumps({"error": "invalid command format"}), 400, {"Content-Type": "application/json"}
+        parts = ["/usr/local/bin/pmtiles", "extract", source, dest, "--download-threads=4"]
+        if bbox:
+            parts.append("--bbox=" + bbox)
+        if maxzoom:
+            parts.append("--maxzoom=" + maxzoom)
         threading.Thread(target=_do_extract, args=(parts, filename), daemon=True).start()
         return json.dumps({"ok": True}), 200, {"Content-Type": "application/json"}
 

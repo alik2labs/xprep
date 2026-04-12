@@ -1113,7 +1113,7 @@ HTML_TEMPLATE = """
               var row=document.createElement("div");
               row.className="dir-entry"+(entry.is_region_file?" region-file":"");
               var label=entry.is_region_file?entry.name+' <span style="color:#aaa;font-size:0.8rem;font-weight:normal;">(region file)</span>':entry.name;
-              row.innerHTML='<input type="checkbox" class="dir-cb" data-filename="'+entry.filename+'" data-name="'+entry.name+'" data-cmd="'+entry.cmd.replace(/"/g,"&quot;").replace(/'/g,"&#39;")+'"'+(isInstalled?" disabled":"")+'>'+
+              row.innerHTML='<input type="checkbox" class="dir-cb" data-filename="'+entry.filename+'" data-name="'+entry.name+'" data-source="'+(entry.source||"").replace(/"/g,"&quot;").replace(/'/g,"&#39;")+'" data-bbox="'+(entry.bbox||"")+'" data-maxzoom="'+(entry.maxzoom||"14")+'"'+(isInstalled?" disabled":"")+'>'+
                 '<span class="entry-name">'+label+'</span>'+
                 '<span class="entry-size">'+(entry.size||"")+' MB</span>'+
                 '<span class="entry-zoom"><input type="number" class="zoom-input" min="1" max="15" value="'+entry.maxzoom+'" style="width:54px;padding:3px 5px;border:1px solid #ccc;border-radius:6px;font-size:0.85rem;text-align:center;" title="Max zoom (1-15)"></span>'+
@@ -1148,9 +1148,8 @@ HTML_TEMPLATE = """
             var row=cb.closest(".dir-entry");
             var zoomInput=row?row.querySelector(".zoom-input"):null;
             var zoom=zoomInput?zoomInput.value:null;
-            var cmd=cb.dataset.cmd;
-            if(zoom){cmd=cmd.replace(/--maxzoom=\d+/,"--maxzoom="+zoom);}
-            return{name:cb.dataset.name,filename:cb.dataset.filename,cmd:cmd,state:"queued",elapsed:0};
+            var zoom2=zoom||cb.dataset.maxzoom||"14";
+            return{name:cb.dataset.name,filename:cb.dataset.filename,source:cb.dataset.source,bbox:cb.dataset.bbox,maxzoom:zoom2,state:"queued",elapsed:0};
           });
           checked.forEach(function(cb){cb.checked=false;});
           updateSelectedCount();
@@ -1204,7 +1203,7 @@ HTML_TEMPLATE = """
           updateQueueItem(idx);
           fetch("/api/maps/directory-download",{
             method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({cmd:dirQueue[idx].cmd,filename:dirQueue[idx].filename})
+            body:JSON.stringify({source:dirQueue[idx].source,filename:dirQueue[idx].filename,bbox:dirQueue[idx].bbox,maxzoom:dirQueue[idx].maxzoom})
           });
           var pollStart=Date.now();
           dirQueuePoll=setInterval(function(){
