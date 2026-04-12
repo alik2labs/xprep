@@ -1360,7 +1360,7 @@ HTML_TEMPLATE = """
       <a href="/">Home</a>
     </div>
     <div class="footer-center">
-      <a href="https://expatprepper.org/xprep">expatprepper.org/xprep</a>
+      <a href="https://xprep.co">xprep.co</a>
     </div>
     <div class="footer-right">
       <div class="stat-block">
