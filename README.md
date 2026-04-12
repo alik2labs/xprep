@@ -33,9 +33,9 @@ xPrep creates an offline WiFi hotspot that serves maps, documents, videos, libra
 
 ## Installation
 
-Download and run the installer on a fresh Raspberry Pi:
+Run the following on a fresh Raspberry Pi:
 
-    curl -O https://expatprepper.org/xprep/xprep.tar.gz
+    curl -L -O https://github.com/alik2labs/xprep/releases/latest/download/xprep.tar.gz
     tar -xzf xprep.tar.gz
     cd xprep-release
     sudo bash install.sh
@@ -43,17 +43,29 @@ Download and run the installer on a fresh Raspberry Pi:
 ## Project Structure
 
     xprep-installer/
-      admin_app.py          Flask admin backend
-      admin/                Admin tab modules
-      assets/               Frontend files served by nginx
-        maps/               Map viewer
-        documents/          Document viewer
-        videos/             Video player
-        games/              Offline games
-        tools/              Field tools
-      scripts/              Install and setup scripts
-      install.sh            Main installer
-      build_release.sh      Builds the release tarball
+      admin_app.py              Flask admin backend
+      admin/
+        maps_tab.py             Maps admin routes
+        kiwix_tab.py            Kiwix admin routes
+        videos_tab.py           Videos admin routes
+        documents_tab.py        Documents admin routes
+        settings_tab.py         Settings and WiFi routes
+        status_tab.py           Status dashboard API
+        helpers.py              Shared helpers and constants
+      assets/
+        maps/                   Map viewer
+        documents/              Document viewer
+        videos/                 Video player
+        games/                  Offline games
+        tools/                  Field tools
+        prayer/                 Prayer times
+        expat/                  ExpatPrepper content
+      scripts/
+        setup_*.sh              Per-service install scripts
+        ping_home.py            Device registry ping
+      install.sh                Main installer
+      build_release.sh          Builds and uploads the release
+      config.env.example        Configuration template
 
 ## Admin Panel
 
@@ -61,7 +73,13 @@ The admin panel runs on port 8080. Access it at:
 
     http://55.55.55.55:8080
 
-From here you can manage maps, documents, videos, Kiwix content, and system settings.
+From here you can manage maps, documents, videos, Kiwix content, WiFi settings, and view system status.
+
+## Configuration
+
+Copy config.env.example to config.env and update the values before installing:
+
+    cp config.env.example config.env
 
 ## License
 
