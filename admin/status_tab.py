@@ -39,13 +39,31 @@ def get_storage():
 
 def get_connected_users():
     try:
-        result = subprocess.run(
-            ["arp", "-n"],
-            capture_output=True, text=True, timeout=3
-        )
-        lines = [l for l in result.stdout.strip().split("\n")[1:]
-                 if "10.10.10." in l and "incomplete" not in l]
-        return len(lines)
+        import time
+        from pathlib import Path
+        now = int(time.time())
+
+        # Get active leases MACs
+        leases_file = Path("/var/lib/misc/dnsmasq.leases")
+        if not leases_file.exists():
+            leases_file = Path("/tmp/dnsmasq.leases")
+        active_macs = set()
+        if leases_file.exists():
+            for line in leases_file.read_text().splitlines():
+                parts = line.split()
+                if len(parts) >= 3 and int(parts[0]) > now:
+                    active_macs.add(parts[1].lower())
+
+        # Get MACs currently in arp table on wlan0
+        result = subprocess.run(["arp", "-n"], capture_output=True, text=True, timeout=3)
+        arp_macs = set()
+        for line in result.stdout.strip().split("\n")[1:]:
+            parts = line.split()
+            if len(parts) >= 5 and "wlan0" in parts and "incomplete" not in line:
+                arp_macs.add(parts[2].lower())
+
+        # Only count devices that are both in leases and arp
+        return len(active_macs & arp_macs)
     except:
         return 0
 
@@ -105,7 +123,71 @@ def get_wifi_ssid():
         pass
     return "xPrep"
 
+def run_ping_if_due():
+    try:
+        import subprocess
+        subprocess.Popen(
+            ["python3", "/home/neo/xprep-installer/scripts/ping_home.py"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except:
+        pass
+
+_latest_version_cache = {"version": None, "fetched": 0}
+
+def check_latest_version():
+    import threading, time
+    now = time.time()
+    if now - _latest_version_cache["fetched"] < 3600:
+        return _latest_version_cache["version"]
+    def fetch():
+        try:
+            import urllib.request, json
+            req = urllib.request.Request(
+                "https://api.github.com/repos/alik2labs/xprep/releases/latest",
+                headers={"User-Agent": "xPrep/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as r:
+                data = json.loads(r.read().decode())
+                tag = data.get("tag_name", "").lstrip("v")
+                _latest_version_cache["version"] = tag
+                _latest_version_cache["fetched"] = time.time()
+        except:
+            pass
+    threading.Thread(target=fetch, daemon=True).start()
+    return _latest_version_cache["version"]
+
+def get_last_ping():
+    try:
+        from pathlib import Path
+        p = Path("/opt/xprep/last_ping.txt")
+        if not p.exists():
+            return None
+        return float(p.read_text().strip())
+    except:
+        return None
+
 def register_status_api(app):
+    @app.route("/api/status/ping", methods=["POST"])
+    def api_status_ping():
+        try:
+            import subprocess
+            from pathlib import Path
+            # Force ping by temporarily removing last_ping file
+            ping_file = Path("/opt/xprep/last_ping.txt")
+            if ping_file.exists():
+                ping_file.unlink()
+            result = subprocess.run(
+                ["python3", "/home/neo/xprep-installer/scripts/ping_home.py"],
+                capture_output=True, text=True, timeout=20
+            )
+            if "successfully" in result.stdout:
+                return {"ok": True}
+            else:
+                return {"ok": False, "error": result.stdout or result.stderr}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     @app.route("/api/status")
     def api_status():
         services = {
@@ -116,6 +198,11 @@ def register_status_api(app):
             "Kolibri": get_service_status("xprep-kolibri"),
             "Calibre": get_service_status("xprep-calibre"),
         }
+        run_ping_if_due()
+        last_ping = get_last_ping()
+        import time
+        ping_age_days = round((time.time() - last_ping) / 86400, 1) if last_ping else None
+        latest_version = check_latest_version()
         return jsonify({
             "hostname": get_hostname(),
             "ips": get_ips(),
@@ -126,4 +213,6 @@ def register_status_api(app):
             "services": services,
             "maps": get_maps_info(),
             "wifi_ssid": get_wifi_ssid(),
+            "last_ping_days": ping_age_days,
+            "latest_version": latest_version,
         })
