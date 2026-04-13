@@ -42,15 +42,42 @@ curl -T "$TARBALL" "$FTP_URL" --user "$FTP_USER" --max-time 120 --retry 2 -#
 echo "[upload] expatprepper.org done."
 
 echo "[upload] Uploading to GitHub release..."
-RELEASE_ID=$(curl -s   -H "Authorization: token $GITHUB_TOKEN"   https://api.github.com/repos/$GITHUB_REPO/releases/latest   | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+
+# Get version from config.env
+VERSION=$(grep "^VERSION=" config.env | cut -d= -f2)
+TAG="v$VERSION"
+
+# Check if release exists for this tag
+RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+  https://api.github.com/repos/$GITHUB_REPO/releases/tags/$TAG \
+  | python3 -c "import sys,json; r=json.load(sys.stdin); print(r.get('id',''))" 2>/dev/null)
+
+# Create release if it doesn't exist
+if [ -z "$RELEASE_ID" ]; then
+  echo "[upload] Creating GitHub release $TAG..."
+  RELEASE_ID=$(curl -s -X POST \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"tag_name\":\"$TAG\",\"name\":\"$TAG\",\"body\":\"xPrep $TAG\",\"draft\":false,\"prerelease\":false}" \
+    https://api.github.com/repos/$GITHUB_REPO/releases \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+fi
 
 echo "[upload] Found GitHub release ID: $RELEASE_ID"
 
-ASSET_ID=$(curl -s   -H "Authorization: token $GITHUB_TOKEN"   https://api.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID/assets   | python3 -c "import sys,json; assets=json.load(sys.stdin); a=[x for x in assets if x['name']=='xprep.tar.gz']; print(a[0]['id'] if a else '')")
+ASSET_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+  https://api.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID/assets \
+  | python3 -c "import sys,json; assets=json.load(sys.stdin); a=[x for x in assets if x['name']=='xprep.tar.gz']; print(a[0]['id'] if a else '')")
 
 if [ -n "$ASSET_ID" ]; then
   echo "[upload] Removing old asset..."
-  curl -s -X DELETE     -H "Authorization: token $GITHUB_TOKEN"     https://api.github.com/repos/$GITHUB_REPO/releases/assets/$ASSET_ID
+  curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+    https://api.github.com/repos/$GITHUB_REPO/releases/assets/$ASSET_ID
 fi
 
-curl -s -X POST   -H "Authorization: token $GITHUB_TOKEN"   -H "Content-Type: application/octet-stream"   -T "$TARBALL"   "https://uploads.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID/assets?name=xprep.tar.gz"   | python3 -c "import sys,json; r=json.load(sys.stdin); print('[upload] GitHub done:', r.get('browser_download_url','error'))"
+curl -s -X POST \
+  -H "Authorization: token $GITHUB_TOKEN" \
+  -H "Content-Type: application/octet-stream" \
+  -T "$TARBALL" \
+  "https://uploads.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID/assets?name=xprep.tar.gz" \
+  | python3 -c "import sys,json; r=json.load(sys.stdin); print('[upload] GitHub done:', r.get('browser_download_url','error'))"
