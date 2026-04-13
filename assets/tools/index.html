@@ -163,6 +163,13 @@
         <div class="category-body" id="nav-reference"></div>
       </div>
 
+      <div class="category">
+        <div class="category-header" onclick="openCalculator()">
+          <div class="category-title">Calculator</div>
+          <div class="category-meta"><i class="chevron">&#8599;</i></div>
+        </div>
+      </div>
+
     </div>
 
     <div class="panel-col">
@@ -171,6 +178,10 @@
           <svg width="48" height="48" viewBox="0 0 40 40" fill="none"><path d="M6 34l6-6m0 0l14-14m-14 14l4-4M26 6l8 8-4 4-8-8 4-4z" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="30" r="3" stroke="#161616" stroke-width="1.5"/></svg>
           <p>Select a tool from the left to get started</p>
         </div>
+      </div>
+      <!-- Calculator inline panel -->
+      <div id="calc-panel" style="display:none;">
+        <iframe src="/tools/calculator.html" style="width:100%;height:700px;border:none;border-radius:14px;" id="calc-iframe"></iframe>
       </div>
     </div>
   </div>
@@ -225,6 +236,19 @@
         container.appendChild(row);
       });
     });
+
+    function openCalculator() {
+      // On mobile - open full page
+      if (window.innerWidth < 700) {
+        window.location.href = "/tools/calculator.html";
+        return;
+      }
+      // On desktop - show inline
+      document.getElementById("tool-panel").style.display = "none";
+      document.getElementById("calc-panel").style.display = "block";
+      // Highlight the calculator category
+      document.querySelectorAll(".category-header").forEach(h => h.classList.remove("open"));
+    }
 
     function toggleCategory(header) {
       const body = header.nextElementSibling;
