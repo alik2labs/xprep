@@ -180,9 +180,7 @@
         </div>
       </div>
       <!-- Calculator inline panel -->
-      <div id="calc-panel" style="display:none;">
-        <iframe src="/tools/calculator.html" style="width:100%;height:700px;border:none;border-radius:14px;" id="calc-iframe"></iframe>
-      </div>
+      <div id="calc-panel" style="display:none;"></div>
     </div>
   </div>
 
@@ -246,7 +244,14 @@
       // On desktop - show inline
       document.getElementById("tool-panel").style.display = "none";
       document.getElementById("calc-panel").style.display = "block";
-      // Highlight the calculator category
+      // Inject iframe only when clicked
+      const panel = document.getElementById("calc-panel");
+      if (!panel.querySelector("iframe")) {
+        const iframe = document.createElement("iframe");
+        iframe.src = "/tools/calculator.html";
+        iframe.style = "width:100%;height:700px;border:none;border-radius:14px;";
+        panel.appendChild(iframe);
+      }
       document.querySelectorAll(".category-header").forEach(h => h.classList.remove("open"));
     }
 
