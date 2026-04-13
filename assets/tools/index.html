@@ -179,8 +179,8 @@
           <p>Select a tool from the left to get started</p>
         </div>
       </div>
-      <!-- Calculator inline panel -->
       <div id="calc-panel" style="display:none;"></div>
+
     </div>
   </div>
 
@@ -236,23 +236,20 @@
     });
 
     function openCalculator() {
-      // On mobile - open full page
       if (window.innerWidth < 700) {
         window.location.href = "/tools/calculator.html";
         return;
       }
-      // On desktop - show inline
       document.getElementById("tool-panel").style.display = "none";
-      document.getElementById("calc-panel").style.display = "block";
-      // Inject iframe only when clicked
       const panel = document.getElementById("calc-panel");
+      panel.style.display = "block";
       if (!panel.querySelector("iframe")) {
         const iframe = document.createElement("iframe");
         iframe.src = "/tools/calculator.html";
-        iframe.style = "width:100%;height:700px;border:none;border-radius:14px;";
+        iframe.style.cssText = "width:100%;height:680px;border:none;border-radius:14px;background:#111;";
         panel.appendChild(iframe);
       }
-      document.querySelectorAll(".category-header").forEach(h => h.classList.remove("open"));
+      document.querySelectorAll(".tool-row").forEach(r => r.classList.remove("active"));
     }
 
     function toggleCategory(header) {
@@ -275,6 +272,8 @@
     let activeRow = null;
 
     function openTool(id, row) {
+      document.getElementById("tool-panel").style.display = "block";
+      document.getElementById("calc-panel").style.display = "none";
       if (activeRow) activeRow.classList.remove("active");
       activeRow = row;
       row.classList.add("active");

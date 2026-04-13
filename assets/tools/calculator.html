@@ -1,24 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Calculator — xPrep</title>
-  <!-- CalcSS3 original layout CSS -->
-  <link href="/tools/CalcSS3.css" rel="stylesheet">
   <style>
     @font-face { font-family: "PixelifySans"; src: url("/fonts/PixelifySans-Bold.ttf") format("truetype"); font-weight: 700; }
-    * { box-sizing: border-box; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, Arial, Helvetica, sans-serif;
       background: #111;
+      font-family: -apple-system, Arial, Helvetica, sans-serif;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 0;
     }
 
     .top-bar {
@@ -26,153 +23,128 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 20px;
-      flex-shrink: 0;
+      padding: 14px 20px;
     }
     .logo { font-family: "PixelifySans", Arial, sans-serif; font-weight: 700; font-size: 1.1rem; color: #5EA259; }
-    .back-link { color: #666; text-decoration: none; font-size: 0.82rem; }
+    .back-link { color: #666; text-decoration: none; font-size: 0.85rem; }
     .back-link:hover { color: #aaa; }
 
-    /* ===== xPrep Theme Overrides for CalcSS3 ===== */
-
-    .calc-main {
-      background: #1c1c1e !important;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
-      border-radius: 16px !important;
-      padding: 12px 10px 16px !important;
+    #app {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      padding: 0 16px 40px;
     }
 
-    /* Display */
-    .calc-display {
-      background: #000 !important;
-      border-radius: 10px !important;
-      box-shadow: none !important;
-      color: #fff !important;
-      height: auto !important;
-      min-height: 70px !important;
-      padding: 10px 12px 6px !important;
-      line-height: 1.1 !important;
-      font-size: 42px !important;
-      text-shadow: none !important;
-    }
-    .calc-rad {
-      color: #5EA259 !important;
-      font-size: 11px !important;
-      bottom: 4px !important;
-    }
-    .calc-hold {
-      color: #444 !important;
-      font-size: 9px !important;
-    }
-    .calc-buttons {
-      opacity: 0.6 !important;
-    }
-    .calc-buttons div {
-      background: #333 !important;
-      border-radius: 50% !important;
-      color: #aaa !important;
-      border: 1px solid #444 !important;
-    }
-    .calc-buttons div:hover {
-      background: #444 !important;
-      color: #fff !important;
+    .calculator {
+      width: 460px;
+      padding: 20px;
+      border-radius: 16px;
+      background: #1c1c1e;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
 
-    /* Left sci panel buttons */
-    .calc-left > div {
-      background: #2c2c2e !important;
-      border-radius: 50% !important;
-      box-shadow: none !important;
-      border: none !important;
+    .toggle-button {
+      border: none;
+      background: #2c2c2e;
+      cursor: pointer;
+      outline: none;
+      font-size: 0.85rem;
+      color: #aaa;
+      border-radius: 8px;
+      padding: 6px 14px;
+      margin-bottom: 12px;
+      width: 100%;
+      text-align: left;
+      transition: background 0.15s;
     }
-    .calc-left > div > div {
-      color: #e0e0e0 !important;
-      text-shadow: none !important;
-      font-size: 13px !important;
+    .toggle-button:hover { background: #3a3a3c; color: #fff; }
+    .toggle-button p { margin: 0; }
+
+    .results {
+      margin-bottom: 12px;
     }
-    .calc-left > div:active,
-    .calc-left .calc-press {
-      background: #444 !important;
+    .input {
+      width: 100%;
+      height: 60px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #000;
+      color: #fff;
+      padding: 0 14px;
+      font-size: 2rem;
+      font-weight: 300;
+      text-align: right;
+      outline: none;
     }
-    .calc-left .calc-active {
-      background: #2c2c2e !important;
-    }
-    .calc-left .calc-active > div {
-      color: #5EA259 !important;
-    }
-    .calc-left .calc-second > div {
-      color: #5EA259 !important;
-      font-size: 11px !important;
+    .input:focus { border-color: #5EA259; }
+
+    .mode {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-start;
     }
 
-    /* Right standard buttons */
-    .calc-right > div {
-      border-radius: 50% !important;
-      box-shadow: none !important;
-      border: none !important;
+    .button {
+      width: calc(16.666% - 5px);
+      height: 52px;
+      border: none;
+      border-radius: 10px;
+      color: #e0e0e0;
+      background: #2c2c2e;
+      cursor: pointer;
+      outline: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background 0.1s, transform 0.05s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .button:hover { background: #3a3a3c; }
+    .button:active { background: #48484a; transform: scale(0.96); }
+
+    /* Basic mode - 6 columns */
+    .mode.basic .button {
+      width: calc(16.666% - 5px);
     }
 
-    /* Number buttons */
-    .calc-right .calc-black {
-      background: #333 !important;
-    }
-    .calc-right .calc-black > div {
-      color: #fff !important;
-      text-shadow: none !important;
-      font-size: 20px !important;
+    /* Advanced mode - 6 columns */
+    .mode.advanced .button {
+      width: calc(16.666% - 5px);
     }
 
-    /* Gray buttons (AC, +/-, %) */
-    .calc-right .calc-brown {
-      background: #636366 !important;
-      box-shadow: none !important;
-    }
-    .calc-right .calc-brown > div {
-      color: #fff !important;
-      text-shadow: none !important;
-    }
-
-    /* Orange = green for xPrep */
-    .calc-right .calc-orange {
+    /* Special buttons */
+    .equal-sign {
       background: #5EA259 !important;
-      box-shadow: none !important;
+      color: white !important;
+      width: calc(33.333% - 4px) !important;
+      font-size: 1.2rem !important;
     }
-    .calc-right .calc-orange > div {
-      color: #fff !important;
-      text-shadow: none !important;
-    }
+    .equal-sign:hover { background: #4a8a46 !important; }
+    .equal-sign:active { background: #3d7a3a !important; }
 
-    /* Zero button */
-    .calc-right .calc-zero {
-      border-radius: 999px !important;
-    }
-    .calc-right .calc-zero > div {
-      color: #fff !important;
-      text-shadow: none !important;
-      font-size: 20px !important;
-    }
+    .btn-clear { background: #636366 !important; color: white !important; }
+    .btn-clear:hover { background: #7c7c80 !important; }
+    .btn-op { background: #3a3a3c !important; color: #5EA259 !important; font-weight: bold !important; }
+    .btn-num { background: #333 !important; color: white !important; }
+    .btn-num:hover { background: #444 !important; }
+    .btn-sci { background: #1c1c1e !important; color: #aaa !important; font-size: 0.8rem !important; border: 1px solid #333 !important; }
+    .btn-sci:hover { background: #2c2c2e !important; color: #fff !important; }
 
-    /* Active states */
-    .calc-right .calc-black:active,
-    .calc-right .calc-black.calc-press { background: #555 !important; }
-    .calc-right .calc-brown:active,
-    .calc-right .calc-brown.calc-press { background: #888 !important; }
-    .calc-right .calc-orange:active,
-    .calc-right .calc-orange.calc-press { background: #4a8a46 !important; }
-
-    /* Eq button */
-    .calc-right .calc-eq {
-      border-radius: 999px !important;
-    }
-    .calc-right .calc-eq .calc-down {
-      font-size: 22px !important;
-      color: #fff !important;
-    }
-
-    /* Separator line */
-    .calc-left > div:last-child,
-    .calc-left > div:nth-child(4n) {
-      /* remove any separator styling */
+    @media (max-width: 600px) {
+      body { background: #1c1c1e; justify-content: flex-start; }
+      #app { padding: 0 0 16px; }
+      .calculator { width: 100%; border-radius: 0 0 20px 20px; padding: 8px 8px 12px; }
+      .toggle-button { margin-bottom: 6px; padding: 6px 12px; font-size: 0.82rem; }
+      .results { margin-bottom: 6px; }
+      .input { height: 52px; font-size: 1.6rem; border-radius: 10px; }
+      .mode { gap: 5px; }
+      .mode .button { height: 62px; font-size: 1.05rem; border-radius: 10px; width: calc(16.666% - 5px); }
+      .btn-num { font-size: 1.3rem !important; }
+      .btn-op { font-size: 1.2rem !important; }
+      .btn-clear { font-size: 1.1rem !important; }
+      .btn-sci { font-size: 0.85rem !important; }
+      .equal-sign { height: 62px !important; width: calc(33.333% - 4px) !important; font-size: 1.4rem !important; }
     }
   </style>
 </head>
@@ -183,72 +155,163 @@
   <a href="/" class="back-link">&#8592; Home</a>
 </div>
 
-<div class="calc-main">
-  <div class="calc-display">
-    <span>0</span>
-    <div class="calc-rad">Rad</div>
-    <div class="calc-hold"></div>
-    <div class="calc-buttons">
-      <div class="calc-info">?</div>
-      <div class="calc-smaller">&gt;</div>
-      <div class="calc-ln">.</div>
+<div id="app">
+  <div class="calculator">
+    <button @click="changeModeEvent" class="toggle-button">
+      <p v-if="changeMode">&#9654; Show Advanced Mode</p>
+      <p v-else>&#9660; Show Basic Mode</p>
+    </button>
+    <div class="results">
+      <input class="input" v-model="current" @keyup.enter="pressKey('=')" />
     </div>
-  </div>
 
-  <div class="calc-left">
-    <div><div>2nd</div></div>
-    <div><div>(</div></div>
-    <div><div>)</div></div>
-    <div><div>%</div></div>
-    <div><div>1/x</div></div>
-    <div><div>x<sup>2</sup></div></div>
-    <div><div>x<sup>3</sup></div></div>
-    <div><div>y<sup>x</sup></div></div>
-    <div><div>x!</div></div>
-    <div><div>&radic;</div></div>
-    <div><div class="calc-radxy"><sup>x</sup><em>&radic;</em><span>y</span></div></div>
-    <div><div>log</div></div>
-    <div><div>sin</div></div>
-    <div><div>cos</div></div>
-    <div><div>tan</div></div>
-    <div><div>ln</div></div>
-    <div><div>sinh</div></div>
-    <div><div>cosh</div></div>
-    <div><div>tanh</div></div>
-    <div><div>e<sup>x</sup></div></div>
-    <div><div>Deg</div></div>
-    <div><div>&pi;</div></div>
-    <div><div>EE</div></div>
-    <div><div>Rand</div></div>
-  </div>
+    <!-- BASIC MODE -->
+    <div class="mode basic" v-if="changeMode">
+      <button class="button btn-num" @click="press">7</button>
+      <button class="button btn-num" @click="press">8</button>
+      <button class="button btn-num" @click="press">9</button>
+      <button class="button btn-op"  @click="press">*</button>
+      <button class="button btn-clear" @click="press">&#60;=</button>
+      <button class="button btn-clear" @click="press">C</button>
 
-  <div class="calc-right">
-    <div><div>mc</div></div>
-    <div><div>m+</div></div>
-    <div><div>m-</div></div>
-    <div><div>mr</div></div>
-    <div class="calc-brown"><div>AC</div></div>
-    <div class="calc-brown"><div>+/&#8211;</div></div>
-    <div class="calc-brown calc-f19"><div>&divide;</div></div>
-    <div class="calc-brown calc-f21"><div>&times;</div></div>
-    <div class="calc-black"><div>7</div></div>
-    <div class="calc-black"><div>8</div></div>
-    <div class="calc-black"><div>9</div></div>
-    <div class="calc-brown calc-f18"><div>&#8211;</div></div>
-    <div class="calc-black"><div>4</div></div>
-    <div class="calc-black"><div>5</div></div>
-    <div class="calc-black"><div>6</div></div>
-    <div class="calc-brown calc-f18"><div>+</div></div>
-    <div class="calc-black"><div>1</div></div>
-    <div class="calc-black"><div>2</div></div>
-    <div class="calc-black"><div>3</div></div>
-    <div class="calc-blank"><textarea></textarea></div>
-    <div class="calc-orange calc-eq calc-f17"><div><div class="calc-down">=</div></div></div>
-    <div class="calc-black calc-zero"><div><span>0</span></div></div>
-    <div class="calc-black calc-f21"><div>.</div></div>
+      <button class="button btn-num" @click="press">4</button>
+      <button class="button btn-num" @click="press">5</button>
+      <button class="button btn-num" @click="press">6</button>
+      <button class="button btn-op"  @click="press">/</button>
+      <button class="button btn-op"  @click="press">(</button>
+      <button class="button btn-op"  @click="press">)</button>
+
+      <button class="button btn-num" @click="press">1</button>
+      <button class="button btn-num" @click="press">2</button>
+      <button class="button btn-num" @click="press">3</button>
+      <button class="button btn-op"  @click="press">-</button>
+      <button class="button btn-sci" @click="press">x ²</button>
+      <button class="button btn-sci" @click="press">±</button>
+
+      <button class="button btn-num" @click="press">0</button>
+      <button class="button btn-num" @click="press">.</button>
+      <button class="button btn-sci" @click="press">%</button>
+      <button class="button btn-op"  @click="press">+</button>
+      <button class="button equal-sign" @click="press">=</button>
+    </div>
+
+    <!-- ADVANCED MODE -->
+    <div class="mode advanced" v-else>
+      <button class="button btn-sci" @click="press">sin</button>
+      <button class="button btn-sci" @click="press">cos</button>
+      <button class="button btn-sci" @click="press">tan</button>
+      <button class="button btn-sci" @click="press">x^</button>
+      <button class="button btn-clear" @click="press">&#60;=</button>
+      <button class="button btn-clear" @click="press">C</button>
+
+      <button class="button btn-sci" @click="press">log</button>
+      <button class="button btn-sci" @click="press">ln</button>
+      <button class="button btn-sci" @click="press">e</button>
+      <button class="button btn-sci" @click="press">∘</button>
+      <button class="button btn-sci" @click="press">rad</button>
+      <button class="button btn-sci" @click="press">√</button>
+
+      <button class="button btn-num" @click="press">7</button>
+      <button class="button btn-num" @click="press">8</button>
+      <button class="button btn-num" @click="press">9</button>
+      <button class="button btn-op"  @click="press">/</button>
+      <button class="button btn-sci" @click="press">x ²</button>
+      <button class="button btn-sci" @click="press">x !</button>
+
+      <button class="button btn-num" @click="press">4</button>
+      <button class="button btn-num" @click="press">5</button>
+      <button class="button btn-num" @click="press">6</button>
+      <button class="button btn-op"  @click="press">*</button>
+      <button class="button btn-op"  @click="press">(</button>
+      <button class="button btn-op"  @click="press">)</button>
+
+      <button class="button btn-num" @click="press">1</button>
+      <button class="button btn-num" @click="press">2</button>
+      <button class="button btn-num" @click="press">3</button>
+      <button class="button btn-op"  @click="press">-</button>
+      <button class="button btn-sci" @click="press">%</button>
+      <button class="button btn-sci" @click="press">±</button>
+
+      <button class="button btn-num" @click="press">0</button>
+      <button class="button btn-num" @click="press">.</button>
+      <button class="button btn-sci" @click="press">&#x003C0;</button>
+      <button class="button btn-op"  @click="press">+</button>
+      <button class="button equal-sign" @click="press">=</button>
+    </div>
   </div>
 </div>
 
-<script src="/tools/CalcSS3.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.3.4/vue.min.js"></script>
+<script>
+let app = new Vue({
+  el: "#app",
+  data() {
+    return { current: "", changeMode: true };
+  },
+  methods: {
+    pressKey(key) {
+      this.handleKey(key);
+    },
+    press(event) {
+      this.handleKey(event.target.textContent.trim());
+    },
+    handleKey(key) {
+      let me = this;
+      const plain = ["0","1","2","3","4","5","6","7","8","9",".","+","-","*","/","(",")","%"];
+      if (plain.includes(key)) {
+        me.current += key;
+      } else if (key === "=") {
+        try {
+          if (me.current.indexOf("^") > -1) {
+            let base = me.current.slice(0, me.current.indexOf("^"));
+            let exp  = me.current.slice(me.current.indexOf("^") + 1);
+            me.current = String(Math.pow(eval(base), eval(exp)));
+          } else {
+            me.current = String(eval(me.current));
+          }
+        } catch(e) { me.current = "Error"; }
+      } else if (key === "C") {
+        me.current = "";
+      } else if (key === "<=" || key === "<=") {
+        me.current = me.current.slice(0, -1);
+      } else if (key === "±") {
+        me.current = me.current.charAt(0) === "-" ? me.current.slice(1) : "-" + me.current;
+      } else if (key === "%" ) {
+        me.current = String(parseFloat(me.current) / 100);
+      } else if (key === "π") {
+        me.current += String(Math.PI);
+      } else if (key === "x ²") {
+        let v = parseFloat(me.current); me.current = String(v * v);
+      } else if (key === "√") {
+        me.current = String(Math.sqrt(parseFloat(me.current)));
+      } else if (key === "sin") {
+        me.current = String(Math.sin(parseFloat(me.current)));
+      } else if (key === "cos") {
+        me.current = String(Math.cos(parseFloat(me.current)));
+      } else if (key === "tan") {
+        me.current = String(Math.tan(parseFloat(me.current)));
+      } else if (key === "log") {
+        me.current = String(Math.log10(parseFloat(me.current)));
+      } else if (key === "ln") {
+        me.current = String(Math.log(parseFloat(me.current)));
+      } else if (key === "x^") {
+        me.current += "^";
+      } else if (key === "x !") {
+        let n = parseInt(me.current), r = 1;
+        if (n < 0) { me.current = "NaN"; return; }
+        for (let i = n; i > 0; i--) r *= i;
+        me.current = String(r);
+      } else if (key === "e") {
+        me.current = String(Math.exp(parseFloat(me.current)));
+      } else if (key === "rad") {
+        me.current = String(parseFloat(me.current) * Math.PI / 180);
+      } else if (key === "∘") {
+        me.current = String(parseFloat(me.current) * 180 / Math.PI);
+      }
+    },
+    changeModeEvent() { this.changeMode = !this.changeMode; }
+  }
+});
+</script>
 </body>
 </html>
