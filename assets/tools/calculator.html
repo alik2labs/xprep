@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Calculator — xPrep</title>
+  <style>
+    @font-face { font-family: "PixelifySans"; src: url("/fonts/PixelifySans-Bold.ttf") format("truetype"); font-weight: 700; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      font-family: -apple-system, Arial, Helvetica, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .top-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+    }
+    .logo { font-family: "PixelifySans", Arial, sans-serif; font-weight: 700; font-size: 1.1rem; color: #5EA259; }
+    .back-link { color: #666; text-decoration: none; font-size: 0.85rem; }
+    .back-link:hover { color: #aaa; }
+
+    #app {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      padding: 0 16px 40px;
+    }
+
+    .calculator {
+      width: 460px;
+      padding: 20px;
+      border-radius: 16px;
+      background: #1c1c1e;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .toggle-button {
+      border: none;
+      background: #2c2c2e;
+      cursor: pointer;
+      outline: none;
+      font-size: 0.85rem;
+      color: #aaa;
+      border-radius: 8px;
+      padding: 6px 14px;
+      margin-bottom: 12px;
+      width: 100%;
+      text-align: left;
+      transition: background 0.15s;
+    }
+    .toggle-button:hover { background: #3a3a3c; color: #fff; }
+    .toggle-button p { margin: 0; }
+
+    .results {
+      margin-bottom: 12px;
+    }
+    .input {
+      width: 100%;
+      height: 60px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #000;
+      color: #fff;
+      padding: 0 14px;
+      font-size: 2rem;
+      font-weight: 300;
+      text-align: right;
+      outline: none;
+    }
+    .input:focus { border-color: #5EA259; }
+
+    .mode {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-start;
+    }
+
+    .button {
+      width: calc(16.666% - 5px);
+      height: 52px;
+      border: none;
+      border-radius: 10px;
+      color: #e0e0e0;
+      background: #2c2c2e;
+      cursor: pointer;
+      outline: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background 0.1s, transform 0.05s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .button:hover { background: #3a3a3c; }
+    .button:active { background: #48484a; transform: scale(0.96); }
+
+    /* Basic mode - 6 columns */
+    .mode.basic .button {
+      width: calc(16.666% - 5px);
+    }
+
+    /* Advanced mode - 6 columns */
+    .mode.advanced .button {
+      width: calc(16.666% - 5px);
+    }
+
+    /* Special buttons */
+    .equal-sign {
+      background: #5EA259 !important;
+      color: white !important;
+      width: calc(33.333% - 4px) !important;
+      font-size: 1.2rem !important;
+    }
+    .equal-sign:hover { background: #4a8a46 !important; }
+    .equal-sign:active { background: #3d7a3a !important; }
+
+    .btn-clear { background: #636366 !important; color: white !important; }
+    .btn-clear:hover { background: #7c7c80 !important; }
+    .btn-op { background: #3a3a3c !important; color: #5EA259 !important; font-weight: bold !important; }
+    .btn-num { background: #333 !important; color: white !important; }
+    .btn-num:hover { background: #444 !important; }
+    .btn-sci { background: #1c1c1e !important; color: #aaa !important; font-size: 0.8rem !important; border: 1px solid #333 !important; }
+    .btn-sci:hover { background: #2c2c2e !important; color: #fff !important; }
+
+    @media (max-width: 600px) {
+      body { background: #1c1c1e; justify-content: flex-start; }
+      #app { padding: 0 0 16px; }
+      .calculator { width: 100%; border-radius: 0 0 20px 20px; padding: 8px 8px 12px; }
+      .toggle-button { margin-bottom: 6px; padding: 6px 12px; font-size: 0.82rem; }
+      .results { margin-bottom: 6px; }
+      .input { height: 52px; font-size: 1.6rem; border-radius: 10px; }
+      .mode { gap: 5px; }
+      .mode .button { height: 62px; font-size: 1.05rem; border-radius: 10px; width: calc(16.666% - 5px); }
+      .btn-num { font-size: 1.3rem !important; }
+      .btn-op { font-size: 1.2rem !important; }
+      .btn-clear { font-size: 1.1rem !important; }
+      .btn-sci { font-size: 0.85rem !important; }
+      .equal-sign { height: 62px !important; width: calc(33.333% - 4px) !important; font-size: 1.4rem !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="logo">xPrep</span>
+  <a href="/" class="back-link">&#8592; Home</a>
+</div>
+
+<div id="app">
+  <div class="calculator">
+    <button @click="changeModeEvent" class="toggle-button">
+      <p v-if="changeMode">&#9654; Show Advanced Mode</p>
+      <p v-else>&#9660; Show Basic Mode</p>
+    </button>
+    <div class="results">
+      <input class="input" v-model="current" @keyup.enter="pressKey('=')" />
+    </div>
+
+    <!-- BASIC MODE -->
+    <div class="mode basic" v-if="changeMode">
+      <button class="button btn-num" @click="press">7</button>
+      <button class="button btn-num" @click="press">8</button>
+      <button class="button btn-num" @click="press">9</button>
+      <button class="button btn-op"  @click="press">*</button>
+      <button class="button btn-clear" @click="press">&#60;=</button>
+      <button class="button btn-clear" @click="press">C</button>
+
+      <button class="button btn-num" @click="press">4</button>
+      <button class="button btn-num" @click="press">5</button>
+      <button class="button btn-num" @click="press">6</button>
+      <button class="button btn-op"  @click="press">/</button>
+      <button class="button btn-op"  @click="press">(</button>
+      <button class="button btn-op"  @click="press">)</button>
+
+      <button class="button btn-num" @click="press">1</button>
+      <button class="button btn-num" @click="press">2</button>
+      <button class="button btn-num" @click="press">3</button>
+      <button class="button btn-op"  @click="press">-</button>
+      <button class="button btn-sci" @click="press">x ²</button>
+      <button class="button btn-sci" @click="press">±</button>
+
+      <button class="button btn-num" @click="press">0</button>
+      <button class="button btn-num" @click="press">.</button>
+      <button class="button btn-sci" @click="press">%</button>
+      <button class="button btn-op"  @click="press">+</button>
+      <button class="button equal-sign" @click="press">=</button>
+    </div>
+
+    <!-- ADVANCED MODE -->
+    <div class="mode advanced" v-else>
+      <button class="button btn-sci" @click="press">sin</button>
+      <button class="button btn-sci" @click="press">cos</button>
+      <button class="button btn-sci" @click="press">tan</button>
+      <button class="button btn-sci" @click="press">x^</button>
+      <button class="button btn-clear" @click="press">&#60;=</button>
+      <button class="button btn-clear" @click="press">C</button>
+
+      <button class="button btn-sci" @click="press">log</button>
+      <button class="button btn-sci" @click="press">ln</button>
+      <button class="button btn-sci" @click="press">e</button>
+      <button class="button btn-sci" @click="press">∘</button>
+      <button class="button btn-sci" @click="press">rad</button>
+      <button class="button btn-sci" @click="press">√</button>
+
+      <button class="button btn-num" @click="press">7</button>
+      <button class="button btn-num" @click="press">8</button>
+      <button class="button btn-num" @click="press">9</button>
+      <button class="button btn-op"  @click="press">/</button>
+      <button class="button btn-sci" @click="press">x ²</button>
+      <button class="button btn-sci" @click="press">x !</button>
+
+      <button class="button btn-num" @click="press">4</button>
+      <button class="button btn-num" @click="press">5</button>
+      <button class="button btn-num" @click="press">6</button>
+      <button class="button btn-op"  @click="press">*</button>
+      <button class="button btn-op"  @click="press">(</button>
+      <button class="button btn-op"  @click="press">)</button>
+
+      <button class="button btn-num" @click="press">1</button>
+      <button class="button btn-num" @click="press">2</button>
+      <button class="button btn-num" @click="press">3</button>
+      <button class="button btn-op"  @click="press">-</button>
+      <button class="button btn-sci" @click="press">%</button>
+      <button class="button btn-sci" @click="press">±</button>
+
+      <button class="button btn-num" @click="press">0</button>
+      <button class="button btn-num" @click="press">.</button>
+      <button class="button btn-sci" @click="press">&#x003C0;</button>
+      <button class="button btn-op"  @click="press">+</button>
+      <button class="button equal-sign" @click="press">=</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.3.4/vue.min.js"></script>
+<script>
+let app = new Vue({
+  el: "#app",
+  data() {
+    return { current: "", changeMode: true };
+  },
+  methods: {
+    pressKey(key) {
+      this.handleKey(key);
+    },
+    press(event) {
+      this.handleKey(event.target.textContent.trim());
+    },
+    handleKey(key) {
+      let me = this;
+      const plain = ["0","1","2","3","4","5","6","7","8","9",".","+","-","*","/","(",")","%"];
+      if (plain.includes(key)) {
+        me.current += key;
+      } else if (key === "=") {
+        try {
+          if (me.current.indexOf("^") > -1) {
+            let base = me.current.slice(0, me.current.indexOf("^"));
+            let exp  = me.current.slice(me.current.indexOf("^") + 1);
+            me.current = String(Math.pow(eval(base), eval(exp)));
+          } else {
+            me.current = String(eval(me.current));
+          }
+        } catch(e) { me.current = "Error"; }
+      } else if (key === "C") {
+        me.current = "";
+      } else if (key === "<=" || key === "<=") {
+        me.current = me.current.slice(0, -1);
+      } else if (key === "±") {
+        me.current = me.current.charAt(0) === "-" ? me.current.slice(1) : "-" + me.current;
+      } else if (key === "%" ) {
+        me.current = String(parseFloat(me.current) / 100);
+      } else if (key === "π") {
+        me.current += String(Math.PI);
+      } else if (key === "x ²") {
+        let v = parseFloat(me.current); me.current = String(v * v);
+      } else if (key === "√") {
+        me.current = String(Math.sqrt(parseFloat(me.current)));
+      } else if (key === "sin") {
+        me.current = String(Math.sin(parseFloat(me.current)));
+      } else if (key === "cos") {
+        me.current = String(Math.cos(parseFloat(me.current)));
+      } else if (key === "tan") {
+        me.current = String(Math.tan(parseFloat(me.current)));
+      } else if (key === "log") {
+        me.current = String(Math.log10(parseFloat(me.current)));
+      } else if (key === "ln") {
+        me.current = String(Math.log(parseFloat(me.current)));
+      } else if (key === "x^") {
+        me.current += "^";
+      } else if (key === "x !") {
+        let n = parseInt(me.current), r = 1;
+        if (n < 0) { me.current = "NaN"; return; }
+        for (let i = n; i > 0; i--) r *= i;
+        me.current = String(r);
+      } else if (key === "e") {
+        me.current = String(Math.exp(parseFloat(me.current)));
+      } else if (key === "rad") {
+        me.current = String(parseFloat(me.current) * Math.PI / 180);
+      } else if (key === "∘") {
+        me.current = String(parseFloat(me.current) * 180 / Math.PI);
+      }
+    },
+    changeModeEvent() { this.changeMode = !this.changeMode; }
+  }
+});
+</script>
+</body>
+</html>

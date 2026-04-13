@@ -163,6 +163,13 @@
         <div class="category-body" id="nav-reference"></div>
       </div>
 
+      <div class="category">
+        <div class="category-header" onclick="openCalculator()">
+          <div class="category-title">Calculator</div>
+          <div class="category-meta"><i class="chevron">&#8599;</i></div>
+        </div>
+      </div>
+
     </div>
 
     <div class="panel-col">
@@ -172,6 +179,8 @@
           <p>Select a tool from the left to get started</p>
         </div>
       </div>
+      <div id="calc-panel" style="display:none;"></div>
+
     </div>
   </div>
 
@@ -226,6 +235,23 @@
       });
     });
 
+    function openCalculator() {
+      if (window.innerWidth < 700) {
+        window.location.href = "/tools/calculator.html";
+        return;
+      }
+      document.getElementById("tool-panel").style.display = "none";
+      const panel = document.getElementById("calc-panel");
+      panel.style.display = "block";
+      if (!panel.querySelector("iframe")) {
+        const iframe = document.createElement("iframe");
+        iframe.src = "/tools/calculator.html";
+        iframe.style.cssText = "width:100%;height:680px;border:none;border-radius:14px;background:#111;";
+        panel.appendChild(iframe);
+      }
+      document.querySelectorAll(".tool-row").forEach(r => r.classList.remove("active"));
+    }
+
     function toggleCategory(header) {
       const body = header.nextElementSibling;
       const isOpen = body.classList.contains("open");
@@ -246,6 +272,8 @@
     let activeRow = null;
 
     function openTool(id, row) {
+      document.getElementById("tool-panel").style.display = "block";
+      document.getElementById("calc-panel").style.display = "none";
       if (activeRow) activeRow.classList.remove("active");
       activeRow = row;
       row.classList.add("active");

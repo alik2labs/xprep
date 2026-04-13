@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template_string
 from admin.settings_tab import register_settings_routes, build_settings_context
+from admin.bloom_tab import register_bloom_routes
 from admin.kiwix_tab import register_kiwix_routes, build_kiwix_context
 from admin.status_tab import register_status_api
 from admin.documents_tab import register_documents_routes, register_documents_api, build_documents_context
@@ -1360,7 +1361,7 @@ HTML_TEMPLATE = """
       <a href="/">Home</a>
     </div>
     <div class="footer-center">
-      <a href="https://expatprepper.org/xprep">expatprepper.org/xprep</a>
+      <a href="https://xprep.co">xprep.co</a>
     </div>
     <div class="footer-right">
       <div class="stat-block">
@@ -1511,6 +1512,7 @@ HTML_TEMPLATE = """
 """
 
 register_settings_routes(app)
+register_bloom_routes(app)
 register_kiwix_routes(app)
 register_documents_routes(app)
 register_documents_api(app)

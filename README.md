@@ -2,6 +2,8 @@
 
 Portable Knowledge Infrastructure, built on Raspberry Pi.
 
+Website: https://xprep.co
+
 xPrep creates an offline WiFi hotspot that serves maps, documents, videos, libraries and tools with no internet required. It is designed for emergency preparedness, remote communities, and field use.
 
 ## What it does
